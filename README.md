@@ -2,6 +2,14 @@
 
 Plataforma para reportar incidentes viales en tiempo real en la ciudad.
 
+# Integrantes
+
+VALERIA SOSA JUÁREZ - 222761
+HÉCTOR FRANCISCO PIMENTEL RESÉNDEZ - 222627
+JENNIFER VELO DELGADO - 222745
+SEBASTIAN VALENCIA TERRAZAS - 222929
+EVELYN NAOMI BRAVO - 222645
+
 ## Stack tecnológico
 
 | Capa | Tecnología |
