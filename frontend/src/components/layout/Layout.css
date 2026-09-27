@@ -1,0 +1,19 @@
+/*
+  Layout.css — Lo que une Navbar , content y Footer
+  en todas las paginas de SARV.  Ver Layout.jsx para
+  como se usa el {children} que llena el bloque de content.
+*/
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-content {
+  flex: 1;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}

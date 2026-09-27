@@ -1,0 +1,89 @@
+/*
+  Navbar.css — Estilos de la barra de navegación (actividad 2.4).
+  Usa las variables de theme.css. Cambia de contenido según el
+  estado de sesión simulado en Navbar.jsx (isAuthenticated).
+*/
+
+.navbar {
+  background-color: var(--color-primary);
+  padding: 0.75rem 1.5rem;
+}
+
+.navbar-container {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar-brand {
+  color: var(--color-surface);
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar-link {
+  color: var(--color-primary-light);
+  font-family: var(--font-heading);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.navbar-link:hover,
+.navbar-link.active {
+  color: var(--color-surface);
+}
+
+.navbar-link.active {
+  font-weight: 700;
+}
+
+.navbar-link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-primary-light);
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.navbar-link-button:hover {
+  color: var(--color-surface);
+}
+
+.navbar-cta {
+  background-color: var(--color-accent);
+  color: var(--color-surface);
+  padding: 0.5rem 1.1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.navbar-cta:hover {
+  background-color: var(--color-accent-hover);
+}
