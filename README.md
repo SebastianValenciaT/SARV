@@ -20,6 +20,15 @@ EVELYN NAOMI BRAVO - 222645
 | Cliente HTTP | Axios |
 | Herramienta de build | Vite |
 
+
+## Enlaces del proyecto 
+| Recurso | Enlace |
+|----------|--------|
+| <img src="https://cdn.brandfetch.io/id6O2oGzv-/theme/dark/idncaAgFGT.svg?c=1bxid64Mup7aczewSAYMX&t=1755572716016" width="20"> Documento SRS | [Documento SRS](https://docs.google.com/document/d/1HxYFSUIB-FWlZ9EXAogkkrgHcU26tQuUaSdhCGKKV1A/edit?usp=sharing) |
+| <img src="https://cdn.brandfetch.io/idZHcZ_i7F/theme/light/symbol.svg?c=1dxbfHSJFAPEGdCLU4o5B" width="15"> Prototipo del proyecto | [Prototipo del proyecto](https://www.figma.com/design/5v2wOcQLWYzPlk4WJXFLla/SARV?node-id=9-2&t=jsP1xvXdOttceXGE-1) |
+| <img src="https://cdn.brandfetch.io/id63p8eMbd/theme/dark/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1772368140592" width="60"> Plan de trabajo | [Plan de trabajo](https://sarvproject.atlassian.net/jira/software/projects/SCRUM/summary?atlOrigin=eyJpIjoiNmIzYjIyOTRlMzA4NDY0Y2I5MjNhMGVmMjU2YzVkNmQiLCJwIjoiaiJ9) |
+
+
 ## Requisitos previos
 
 | Herramienta | Versión recomendada |
