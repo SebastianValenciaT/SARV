@@ -54,12 +54,6 @@ export default function Login() {
               />
             </div>
 
-            <div className="forgot-password-wrapper">
-              <a href="#recuperar" className="forgot-password-link">
-                ¿Olvidaste tu contraseña?
-              </a>
-            </div>
-
             <button type="submit" className="btn-iniciar-sesion">
               Iniciar Sesión
             </button>

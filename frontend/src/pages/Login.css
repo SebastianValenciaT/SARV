@@ -79,23 +79,6 @@
   box-shadow: 0 0 0 3px rgba(63, 94, 194, 0.15);
 }
 
-/* Enlace de recuperación */
-.forgot-password-wrapper {
-  text-align: left;
-  margin-top: -4px;
-}
-
-.forgot-password-link {
-  color: #3F5EC2;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.forgot-password-link:hover {
-  text-decoration: underline;
-}
-
 /* Botón Iniciar Sesión*/
 .btn-iniciar-sesion {
   background-color: #3F5EC2;
