@@ -57,3 +57,11 @@ button {
   font-family: inherit;
   cursor: pointer;
 }
+
+.navbar-cta {
+  background-color: var(--color-surface);
+  color: var(--color-primary);
+}
+.navbar-cta:hover {
+  background-color: var(--color-primary-light);
+}
