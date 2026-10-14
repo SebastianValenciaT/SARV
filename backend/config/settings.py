@@ -37,7 +37,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'core',
+    'usuarios',
+    'reportes'
 ]
+
+# Usuario propio: inicia sesión con correo (debe definirse antes de la primera migración).
+AUTH_USER_MODEL = 'usuarios.Usuario'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
