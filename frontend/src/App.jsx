@@ -4,6 +4,7 @@ import Layout from './components/layout/Layout';
 import Alert from './components/common/Alerts';
 import api from './services/api';
 import Login from './pages/Login';
+import Registro from './pages/Registro';
 
 function Inicio() {
   const [status, setStatus] = useState('checking...');
@@ -50,7 +51,7 @@ function App() {
       <Route path="/mapa" element={<Layout><Placeholder title="Mapa" /></Layout>} />
       <Route path="/reportes" element={<Layout><Placeholder title="Reportes" /></Layout>} />
       <Route path="/login" element={<Login />} />
-      <Route path="/registro" element={<Layout><Placeholder title="Registrarse" /></Layout>} />
+      <Route path="/registro" element={<Registro />} />
       <Route path="/mis-reportes" element={<Layout><Placeholder title="Mis reportes" /></Layout>} />
     </Routes>
   );
