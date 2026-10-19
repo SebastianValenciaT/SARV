@@ -1,0 +1,39 @@
+/*
+  MiniMap.css — Mapa ilustrativo con pin centrado (ver MiniMap.jsx).
+  El tamaño lo define el contenedor de cada vista.
+*/
+
+.minimap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.minimap svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.minimap-pin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  margin: -22px 0 0 -17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--color-surface);
+  border-radius: 10px;
+  background: var(--color-primary);
+  color: var(--color-surface);
+  box-shadow: 0 0 0 7px rgba(63, 94, 194, 0.22), 0 4px 10px rgba(63, 94, 194, 0.4);
+}
+
+.minimap-pin .icon {
+  width: 17px;
+  height: 17px;
+}
