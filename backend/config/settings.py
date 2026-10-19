@@ -141,10 +141,27 @@ CORS_ALLOWED_ORIGINS = config(
     cast=Csv()
 )
 
+# Caché en memoria del proceso (geocodificación y contadores de throttle).
+# Con varios procesos/servidores cada uno tendría la suya: en producción usar Redis.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    },
+}
+
+# Nominatim (geocodificación). Política de uso: máx. 1 petición/s, User-Agent que
+# identifique la app con un contacto, y sin autocompletado. Ver reportes/geo.py.
+NOMINATIM_BASE_URL = config('NOMINATIM_BASE_URL', default='https://nominatim.openstreetmap.org')
+NOMINATIM_USER_AGENT = config('NOMINATIM_USER_AGENT', default='SARV-dev/0.1 (contacto no configurado)')
+
 REST_FRAMEWORK = {
     # Por defecto: leer es público, escribir requiere sesión. Así los endpoints de
     # escritura nacen protegidos; los de lectura pública declaran AllowAny a mano.
     'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    # Límites por scope (ScopedRateThrottle): por usuario con sesión o por IP si es anónimo.
+    'DEFAULT_THROTTLE_RATES': {
+        'geo': '30/min',
+    },
 }
