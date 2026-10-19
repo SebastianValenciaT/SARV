@@ -6,13 +6,19 @@ paginar y devolver 404; solo les decimos qué queryset y qué serializer usar.
 from django.db.models import Count, F, Min, Prefetch, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
 
+from . import geo
 from .filters import filtrar_reportes
 from .models import Imagen, Reaccion, Reporte, TipoIncidente
 from .serializers import (
+    GeoBuscarSerializer,
+    GeoInversaSerializer,
     ReporteDetailSerializer,
     ReporteListSerializer,
     ReporteMapaSerializer,
@@ -103,3 +109,61 @@ def imagen_view(request, pk):
     # Evita que el navegador "adivine" otro tipo de contenido distinto a tipo_mime.
     response['X-Content-Type-Options'] = 'nosniff'
     return response
+
+
+# ---------- geocodificación (Nominatim, siempre a través del backend) ----------
+
+# TODO(auth): cambiar a IsAuthenticated cuando exista el login (el contrato pide sesión).
+GEO_PERMISSION_CLASSES = [AllowAny]
+
+MENSAJE_NO_DISPONIBLE = 'El servicio de direcciones no está disponible. Intenta de nuevo en unos minutos.'
+
+
+class GeoBaseView(APIView):
+    """Configuración común: permiso temporal y límite de peticiones (scope 'geo' en settings)."""
+
+    permission_classes = GEO_PERMISSION_CLASSES
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'geo'
+
+    def validar(self, serializer_class):
+        serializer = serializer_class(data=self.request.query_params)
+        serializer.is_valid(raise_exception=True)  # 400 con el detalle del error
+        return serializer.validated_data
+
+    def no_disponible(self):
+        return Response({'detail': MENSAJE_NO_DISPONIBLE}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+class GeoBuscarView(GeoBaseView):
+    """GET /api/geo/buscar/?q= — dirección escrita -> {lat, lng, direccion}."""
+
+    def get(self, request):
+        datos = self.validar(GeoBuscarSerializer)
+        try:
+            resultado = geo.buscar(datos['q'])
+        except geo.NominatimNoDisponible:
+            return self.no_disponible()
+        if resultado is None:
+            return Response(
+                {'detail': 'No encontramos esa dirección en Ciudad Juárez. Revisa el texto o coloca el pin a mano.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(resultado)
+
+
+class GeoInversaView(GeoBaseView):
+    """GET /api/geo/inversa/?lat=&lng= — coordenadas -> {direccion} corta."""
+
+    def get(self, request):
+        datos = self.validar(GeoInversaSerializer)
+        try:
+            resultado = geo.inversa(datos['lat'], datos['lng'])
+        except geo.NominatimNoDisponible:
+            return self.no_disponible()
+        if resultado is None:
+            return Response(
+                {'detail': 'No encontramos una dirección para esta ubicación. Escríbela a mano.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(resultado)

@@ -3,11 +3,16 @@
 Hay uno por vista (lista, detalle, mapa) para mandar solo los campos necesarios.
 Los campos `confirmaciones`, `total_imagenes`, etc. no existen en el modelo:
 los calcula la base de datos con `annotate()` en views.py.
+
+Coordenadas: en el modelo son DecimalField, que DRF convierte a texto ("31.739300").
+Los tres serializers usan `FloatField(read_only=True)` para que lleguen como número
+(31.7393), que es lo que necesita Leaflet.
 """
 from django.urls import reverse
 from rest_framework import serializers
 
 from .models import Reaccion, Reporte, TipoIncidente
+from .zonas import dentro_de_juarez
 
 # Convierte un datetime al mismo formato ISO que usan los demás campos de fecha.
 fecha_iso = serializers.DateTimeField().to_representation
@@ -26,6 +31,8 @@ class TipoIncidenteSerializer(serializers.ModelSerializer):
 
 class ReporteListSerializer(serializers.ModelSerializer):
     tipo_etiqueta = serializers.CharField(read_only=True)        # propiedad del modelo
+    latitud = serializers.FloatField(read_only=True)             # número, no texto
+    longitud = serializers.FloatField(read_only=True)
     confirmaciones = serializers.IntegerField(read_only=True)    # annotate
     total_imagenes = serializers.IntegerField(read_only=True)    # annotate
     imagen_principal = serializers.SerializerMethodField()
@@ -34,7 +41,8 @@ class ReporteListSerializer(serializers.ModelSerializer):
         model = Reporte
         fields = [
             'id', 'titulo', 'descripcion', 'tipo', 'tipo_etiqueta', 'direccion', 'zona', 'estado',
-            'fecha_incidente', 'creado_en', 'confirmaciones', 'total_imagenes', 'imagen_principal',
+            'latitud', 'longitud', 'fecha_incidente', 'creado_en', 'confirmaciones', 'total_imagenes',
+            'imagen_principal',
         ]
 
     def get_imagen_principal(self, obj):
@@ -46,9 +54,7 @@ class ReporteListSerializer(serializers.ModelSerializer):
 
 
 class ReporteDetailSerializer(ReporteListSerializer):
-    # FloatField para que lleguen como número (DecimalField llega como texto).
-    latitud = serializers.FloatField(read_only=True)
-    longitud = serializers.FloatField(read_only=True)
+    # latitud/longitud se heredan de ReporteListSerializer (como número)
     imagenes = serializers.SerializerMethodField()
     reacciones = serializers.SerializerMethodField()
     seguimiento = serializers.SerializerMethodField()
@@ -58,7 +64,7 @@ class ReporteDetailSerializer(ReporteListSerializer):
 
     class Meta(ReporteListSerializer.Meta):
         fields = ReporteListSerializer.Meta.fields + [
-            'gravedad', 'latitud', 'longitud', 'actualizado_en', 'imagenes', 'reacciones',
+            'gravedad', 'actualizado_en', 'imagenes', 'reacciones',
             'seguimiento', 'es_autor', 'mi_reaccion', 'ya_denuncie',
         ]
 
@@ -119,9 +125,27 @@ class ReporteDetailSerializer(ReporteListSerializer):
 
 class ReporteMapaSerializer(serializers.ModelSerializer):
     tipo_etiqueta = serializers.CharField(read_only=True)
-    latitud = serializers.FloatField(read_only=True)
+    latitud = serializers.FloatField(read_only=True)             # mismo formato que lista y detalle
     longitud = serializers.FloatField(read_only=True)
 
     class Meta:
         model = Reporte
         fields = ['id', 'latitud', 'longitud', 'tipo', 'tipo_etiqueta', 'fecha_incidente', 'titulo', 'direccion', 'zona']
+
+
+# ---------- geocodificación (solo validan los query params) ----------
+
+class GeoBuscarSerializer(serializers.Serializer):
+    # CharField quita espacios al inicio/fin antes de validar la longitud
+    q = serializers.CharField(min_length=3, max_length=200)
+
+
+class GeoInversaSerializer(serializers.Serializer):
+    lat = serializers.FloatField()
+    lng = serializers.FloatField()
+
+    def validate(self, datos):
+        # validate() recibe todos los campos ya convertidos: se revisan juntos
+        if not dentro_de_juarez(datos['lat'], datos['lng']):
+            raise serializers.ValidationError('Las coordenadas están fuera de Ciudad Juárez.')
+        return datos

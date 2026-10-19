@@ -81,6 +81,17 @@ class ListadoApiTests(BaseApi):
         self.assertTrue(item['imagen_principal'].startswith('http'))
         self.assertNotIn('contenido', item)
 
+    def test_coordenadas_numericas_y_mismo_formato_en_los_tres_serializers(self):
+        """Leaflet necesita números: lista, detalle y mapa mandan floats idénticos."""
+        r = self.crear_reporte(dlat=0.012345, dlng=-0.054321)
+        de_lista = self.client.get(reverse('reporte-lista')).data['results'][0]
+        de_detalle = self.client.get(reverse('reporte-detalle', args=[r.id])).data
+        de_mapa = self.client.get(reverse('mapa-reportes')).data[0]
+        for datos in (de_lista, de_detalle, de_mapa):
+            self.assertIsInstance(datos['latitud'], float)
+            self.assertIsInstance(datos['longitud'], float)
+            self.assertEqual((datos['latitud'], datos['longitud']), (float(r.latitud), float(r.longitud)))
+
     def test_sin_consultas_n_mas_1(self):
         for _ in range(5):
             r = self.crear_reporte()
