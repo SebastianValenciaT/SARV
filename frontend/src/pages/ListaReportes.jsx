@@ -217,7 +217,12 @@ function ListaReportes() {
                 </div>
               </div>
 
-              <MiniMap icon={iconoPorId(tipos, destacado.tipo)} className="lista-feat-map" />
+              <MiniMap
+                latitud={destacado.latitud}
+                longitud={destacado.longitud}
+                icon={iconoPorId(tipos, destacado.tipo)}
+                className="lista-feat-map"
+              />
             </article>
           )}
 

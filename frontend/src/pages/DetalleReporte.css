@@ -268,18 +268,6 @@
   height: 124px;
 }
 
-.detalle-location-map .minimap-pin {
-  width: 30px;
-  height: 30px;
-  margin: -20px 0 0 -15px;
-  box-shadow: 0 0 0 6px rgba(63, 94, 194, 0.22), 0 4px 10px rgba(63, 94, 194, 0.4);
-}
-
-.detalle-location-map .minimap-pin .icon {
-  width: 15px;
-  height: 15px;
-}
-
 .detalle-location-street {
   padding: 10px 4px 0;
   font-size: 13px;

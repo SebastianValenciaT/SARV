@@ -367,3 +367,14 @@
   font-weight: 700;
   color: var(--color-text);
 }
+
+/* pantallas angostas: el mini mapa baja debajo del texto */
+@media (max-width: 900px) {
+  .lista-feat {
+    flex-wrap: wrap;
+  }
+
+  .lista-feat-map {
+    width: 100%;
+  }
+}

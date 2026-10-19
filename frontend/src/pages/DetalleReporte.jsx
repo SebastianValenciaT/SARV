@@ -211,7 +211,12 @@ function DetalleReporte() {
         {/* columna lateral */}
         <aside className="detalle-side">
           <div className="card detalle-location">
-            <MiniMap icon={icono} className="detalle-location-map" />
+            <MiniMap
+              latitud={reporte.latitud}
+              longitud={reporte.longitud}
+              icon={icono}
+              className="detalle-location-map"
+            />
             <div className="detalle-location-street">{reporte.direccion}</div>
             <div className="detalle-location-sub">{nombreZona(reporte.zona)} · Ciudad Juárez</div>
           </div>

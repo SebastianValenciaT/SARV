@@ -1,27 +1,43 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Marker, useMap } from 'react-leaflet';
 import { Link } from 'react-router-dom';
 import Alert from '../components/common/Alerts';
 import Icon from '../components/common/Icon';
+import MapaBase from '../components/mapa/MapaBase';
+import { crearPinIcon } from '../components/mapa/pinIcon';
 import ReportesHeader from '../components/reportes/ReportesHeader';
 import { iconoPorId, iconoTipo } from '../constants/tipos';
 import { nombreZona } from '../constants/zonas';
 import { useReportesMapa } from '../hooks/useReportes';
 import { useTipos } from '../hooks/useTipos';
 import { formatCuando } from '../utils/fechas';
-import { proyectarAPorcentaje } from '../utils/geo';
 import './MapaReportes.css';
 
 // Categorias rapidas (por nombre del tipo) que se muestran como chips sobre la lista
 const CHIPS = ['Bache', 'Choque', 'Inundación'];
+const ZOOM_ENFOQUE = 15;
 
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
+/**
+ * CentrarEn: mueve el mapa con animacion cuando cambia el reporte enfocado.
+ * Debe ir dentro de <MapaBase> porque useMap() solo funciona dentro del mapa.
+ */
+function CentrarEn({ reporte }) {
+  const map = useMap();
+  const latitud = reporte?.latitud;
+  const longitud = reporte?.longitud;
+
+  useEffect(() => {
+    if (latitud == null || longitud == null) return;
+    map.flyTo([latitud, longitud], Math.max(map.getZoom(), ZOOM_ENFOQUE), { duration: 0.8 });
+  }, [map, latitud, longitud]);
+
+  return null;
 }
 
 /**
  * Vista F — Mapa y reportes (vista mapa).
- * Lista lateral de reportes + mapa ilustrativo con pines. Al seleccionar
- * un reporte (en la lista o en el mapa) se muestra su resumen en el mapa.
+ * Lista lateral de reportes + mapa de OpenStreetMap con un pin por reporte.
+ * Pin y lista estan sincronizados: seleccionar en uno marca el otro.
  */
 function MapaReportes() {
   const [categoria, setCategoria] = useState('todos'); // 'todos' o id de tipo
@@ -35,9 +51,10 @@ function MapaReportes() {
   });
 
   const reportes = data ?? [];
-  // Si no hay seleccion (o ya no esta en la lista filtrada), se muestra el primero.
-  const selected = reportes.find((r) => r.id === selectedId) ?? reportes[0];
-  const selectedPos = selected && proyectarAPorcentaje(selected.latitud, selected.longitud);
+  // Reporte que eligio el usuario (el mapa solo se mueve cuando hay uno)
+  const enfocado = reportes.find((r) => r.id === selectedId);
+  // Si no hay seleccion (o ya no esta en la lista filtrada), la hoja muestra el primero.
+  const selected = enfocado ?? reportes[0];
 
   return (
     <div className="mapa-page">
@@ -113,65 +130,27 @@ function MapaReportes() {
 
         {/* mapa */}
         <section className="mapa-map">
-          <MapaBase />
+          <MapaBase>
+            {reportes.map((reporte) => {
+              const esSeleccionado = reporte.id === selected?.id;
+              return (
+                <Marker
+                  key={reporte.id}
+                  position={[reporte.latitud, reporte.longitud]}
+                  icon={crearPinIcon(iconoPorId(tipos, reporte.tipo), esSeleccionado)}
+                  title={reporte.titulo}
+                  alt={reporte.titulo}
+                  zIndexOffset={esSeleccionado ? 1000 : 0} // el seleccionado queda encima
+                  eventHandlers={{ click: () => setSelectedId(reporte.id) }}
+                />
+              );
+            })}
+            <CentrarEn reporte={enfocado} />
+          </MapaBase>
 
           <div className="mapa-sort">
             Ordenar por <b>Más recientes</b>
             <Icon name="down" size={14} />
-          </div>
-
-          {/* Pines: posicion aproximada con utils/geo.js hasta integrar Leaflet */}
-          {reportes.map((reporte) => {
-            const pos = proyectarAPorcentaje(reporte.latitud, reporte.longitud);
-            return (
-              <button
-                key={reporte.id}
-                type="button"
-                className={`mapa-pin ${reporte.id === selected?.id ? 'sel' : ''}`}
-                style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
-                onClick={() => setSelectedId(reporte.id)}
-                aria-label={reporte.titulo}
-              >
-                <Icon name={iconoPorId(tipos, reporte.tipo)} />
-              </button>
-            );
-          })}
-
-          {selected && (
-            <div
-              className="mapa-popup"
-              style={{
-                left: `${clamp(selectedPos.left - 18, 2, 70)}%`,
-                top: `${clamp(selectedPos.top - 15, 8, 80)}%`,
-              }}
-            >
-              <div className="thumb">
-                <Icon name={iconoPorId(tipos, selected.tipo)} />
-              </div>
-              <div>
-                <div className="mapa-popup-title">{selected.titulo}</div>
-                <div className="mapa-popup-meta">
-                  {selected.direccion} · {formatCuando(selected.fecha_incidente)}
-                </div>
-              </div>
-              <Link to={`/reportes/${selected.id}`} className="mapa-popup-go" aria-label="Ver detalle">
-                <Icon name="arrow-r" />
-              </Link>
-            </div>
-          )}
-
-          <div className="mapa-zoom">
-            <div className="mapa-zoom-group">
-              <button type="button" aria-label="Acercar">
-                <Icon name="plus" />
-              </button>
-              <button type="button" aria-label="Alejar">
-                <Icon name="minus" />
-              </button>
-            </div>
-            <button type="button" className="mapa-zoom-single" aria-label="Mi ubicación">
-              <Icon name="nav" />
-            </button>
           </div>
 
           {selected && (
@@ -204,50 +183,6 @@ function MapaReportes() {
         </section>
       </div>
     </div>
-  );
-}
-
-// Mapa ilustrativo de Ciudad Juárez (placeholder hasta integrar un mapa real)
-function MapaBase() {
-  return (
-    <svg
-      className="mapa-base"
-      viewBox="0 0 1024 942"
-      preserveAspectRatio="xMidYMid slice"
-      aria-hidden="true"
-    >
-      <rect width="1024" height="942" fill="#EDEEF0" />
-      <path d="M-20 60C250 40 520 75 1044 15" stroke="#D3DDF0" strokeWidth="42" fill="none" />
-      <g fill="#DCE7D9">
-        <rect x="270" y="132" width="160" height="62" rx="4" />
-        <rect x="688" y="256" width="92" height="72" rx="4" />
-        <rect x="230" y="598" width="130" height="102" rx="4" />
-      </g>
-      <g stroke="#fff" strokeWidth="8" fill="none" strokeLinecap="round">
-        <path d="M0 116L1024 96" />
-        <path d="M0 222L1024 214" />
-        <path d="M90 125L740 540" />
-        <path d="M560 96L575 942" />
-        <path d="M212 226L120 942" />
-        <path d="M0 516L1024 540" />
-        <path d="M1010 330L820 942" />
-        <path d="M0 766L1024 740" />
-        <path d="M740 540L1024 560" strokeWidth="5" />
-      </g>
-      <g fontSize="9.5" fill="#8A93A3" fontFamily="Montserrat,Inter,sans-serif" fontWeight="500">
-        <text x="404" y="53">Río Bravo</text>
-        <text x="740" y="87">Blvd. Juan Pablo II</text>
-        <text x="740" y="199">Av. 16 de Septiembre</text>
-        <text x="276" y="165" fontSize="8">Parque El Chamizal</text>
-        <text x="250" y="652" fontSize="8">Parque Central</text>
-        <text x="10" y="505">Av. Ejército Nacional</text>
-        <text x="650" y="730">Av. de las Torres</text>
-        <text transform="translate(366 262) rotate(36)">Av. Paseo Triunfo de la República</text>
-        <text transform="translate(590 690) rotate(90)">Av. Tecnológico</text>
-        <text transform="translate(128 760) rotate(-80)">Av. Vicente Guerrero</text>
-        <text transform="translate(880 700) rotate(-62)">Blvd. Zaragoza</text>
-      </g>
-    </svg>
   );
 }
 
