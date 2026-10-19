@@ -1,0 +1,369 @@
+/*
+  ListaReportes.css — Vista G: lista con panel de filtros y reporte expandido.
+  Las piezas base (.card, .thumb, .btn-primary...) viven en styles/ui.css.
+*/
+
+.lista-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.lista-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 23px;
+}
+
+/* ---------- panel de filtros ---------- */
+.lista-filters {
+  flex: none;
+  width: 262px;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 18px;
+  border-radius: 20px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.lista-filters-head {
+  justify-content: space-between;
+}
+
+.lista-filters-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.lista-link-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.lista-filters-section {
+  display: block;
+  margin-top: 22px;
+}
+
+.lista-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.lista-tile {
+  position: relative;
+  height: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.lista-tile .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.lista-tile.on {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+/* punto indicador de seleccion */
+.lista-tile.on::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+.lista-seg {
+  display: flex;
+  margin-top: 12px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--color-bg);
+}
+
+.lista-seg button {
+  flex: 1;
+  height: 32px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.lista-seg button.on {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(27, 34, 54, 0.1);
+}
+
+.lista-select {
+  width: 100%;
+  height: 38px;
+  margin-top: 12px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.lista-apply {
+  height: 42px;
+  margin-top: 22px;
+}
+
+/* ---------- resultados ---------- */
+.lista-results {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lista-results-bar {
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.lista-results-bar b {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.lista-sort {
+  gap: 7px;
+}
+
+.lista-sort b,
+.lista-sort .icon:last-child {
+  color: var(--color-primary);
+}
+
+.lista-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* reporte expandido */
+.lista-feat {
+  display: flex;
+  gap: 18px;
+  padding: 14px;
+  border-radius: 20px;
+}
+
+.lista-feat .thumb {
+  width: 188px;
+  height: 158px;
+  border-radius: 12px;
+}
+
+.lista-feat-tag {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.lista-feat-tag .icon {
+  width: 13px;
+  height: 13px;
+}
+
+.lista-feat-body {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.lista-feat-bell {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 36px;
+  height: 36px;
+}
+
+.lista-feat-title {
+  margin: 18px 44px 0 0;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.lista-feat-meta {
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.lista-feat-desc {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.lista-feat-footer {
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.lista-feat-count {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.lista-feat-count b {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.lista-feat-actions {
+  gap: 12px;
+}
+
+.lista-feat-react {
+  height: 38px;
+}
+
+.lista-feat-map {
+  flex: none;
+  width: 213px;
+  height: 158px;
+}
+
+/* cuadricula */
+.lista-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 13px;
+}
+
+.lista-rc {
+  padding: 16px 16px 14px;
+  border-radius: 16px;
+  color: var(--color-text);
+}
+
+.lista-rc:hover {
+  box-shadow: 0 4px 16px rgba(27, 34, 54, 0.12);
+}
+
+.lista-rc-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.lista-rc-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.lista-rc-icon .icon {
+  width: 19px;
+  height: 19px;
+}
+
+.lista-rc-title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.lista-rc-sub {
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+.lista-rc-more {
+  margin-left: auto;
+  color: var(--color-text-subtle);
+}
+
+.lista-rc-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.lista-rc-date .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.lista-rc-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.lista-rc-count b {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text);
+}

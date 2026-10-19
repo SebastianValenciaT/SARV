@@ -1,0 +1,387 @@
+/*
+  DetalleReporte.css — Vista H: detalle de reporte, pagina completa.
+  Las piezas base (.card, .thumb, .btn-outline...) viven en styles/ui.css.
+*/
+
+.detalle-page {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- barra superior ---------- */
+.detalle-topbar {
+  justify-content: space-between;
+}
+
+.detalle-back {
+  gap: 14px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.detalle-back-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+}
+
+.detalle-date {
+  gap: 9px;
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.detalle-body {
+  display: flex;
+  gap: 24px;
+  margin-top: 6px;
+}
+
+/* ---------- columna principal ---------- */
+.detalle-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.detalle-title {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.detalle-meta {
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.detalle-meta .row {
+  gap: 6px;
+}
+
+.detalle-desc {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* galeria */
+.detalle-gal {
+  flex: none;
+  display: flex;
+  gap: 10px;
+  height: 476px;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 20px;
+}
+
+.detalle-gal-main {
+  flex: 1;
+  border-radius: 14px;
+}
+
+.detalle-gal-main > .icon {
+  width: 56px;
+  height: 56px;
+}
+
+.detalle-gal-main .cam {
+  left: 14px;
+  bottom: 14px;
+  padding: 4px 9px;
+  font-size: 12px;
+}
+
+.detalle-gal-nav {
+  position: absolute;
+  right: 14px;
+  bottom: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+.detalle-gal-nav button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 9px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.detalle-gal-side {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 105px;
+}
+
+.detalle-gal-side .thumb {
+  width: 105px;
+  height: 75px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 9px;
+}
+
+.detalle-gal-side .thumb.on {
+  border-color: var(--color-primary);
+}
+
+/* informacion + reacciones */
+.detalle-cards {
+  display: flex;
+  align-items: stretch;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.detalle-info {
+  width: 326px;
+  padding: 20px 20px 16px;
+}
+
+.detalle-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.detalle-info-row:first-of-type {
+  margin-top: 12px;
+}
+
+.detalle-info-row b {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.detalle-react {
+  width: 268px;
+  padding: 20px;
+}
+
+.detalle-react-tiles {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.detalle-rt {
+  position: relative;
+  width: 118px;
+  height: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.detalle-rt-num {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.detalle-rt-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.detalle-rt .icon {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  width: 15px;
+  height: 15px;
+}
+
+.detalle-rt.ok .icon {
+  color: var(--color-success);
+}
+
+.detalle-rt:disabled {
+  cursor: not-allowed;
+}
+
+.detalle-rt.on {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-surface);
+  box-shadow: 0 8px 18px rgba(63, 94, 194, 0.32);
+}
+
+.detalle-rt.on .detalle-rt-label,
+.detalle-rt.on .icon {
+  color: var(--color-surface);
+  font-weight: 500;
+}
+
+/* ---------- columna lateral ---------- */
+.detalle-side {
+  flex: none;
+  width: 318px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detalle-denunciar {
+  align-self: flex-start;
+}
+
+.detalle-location {
+  padding: 10px 10px 14px;
+}
+
+.detalle-location-map {
+  height: 124px;
+}
+
+.detalle-location-map .minimap-pin {
+  width: 30px;
+  height: 30px;
+  margin: -20px 0 0 -15px;
+  box-shadow: 0 0 0 6px rgba(63, 94, 194, 0.22), 0 4px 10px rgba(63, 94, 194, 0.4);
+}
+
+.detalle-location-map .minimap-pin .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.detalle-location-street {
+  padding: 10px 4px 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.detalle-location-sub {
+  padding: 2px 4px 0;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+/* seguimiento (linea de tiempo) */
+.detalle-timeline {
+  padding: 18px 18px 20px;
+}
+
+.detalle-timeline-label {
+  margin-bottom: 16px;
+}
+
+.detalle-tl {
+  position: relative;
+  display: flex;
+  gap: 12px;
+}
+
+.detalle-tl + .detalle-tl {
+  margin-top: 14px;
+}
+
+/* linea vertical que une los pasos */
+.detalle-tl:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 28px;
+  bottom: -14px;
+  width: 2px;
+  background: var(--color-primary-light);
+}
+
+.detalle-tl-icon {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.detalle-tl-icon .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.detalle-tl-icon.pend {
+  border: 1.5px dashed var(--color-divider);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: #9aa3b2;
+}
+
+.detalle-tl-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.detalle-tl-sub {
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+/* autor */
+.detalle-author {
+  padding: 18px;
+}
+
+.detalle-author-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.detalle-author-sub {
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+.detalle-author-actions {
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.detalle-author-actions .btn-outline {
+  flex: 1;
+  height: 40px;
+}
