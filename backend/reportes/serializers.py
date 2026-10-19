@@ -8,11 +8,21 @@ Coordenadas: en el modelo son DecimalField, que DRF convierte a texto ("31.73930
 Los tres serializers usan `FloatField(read_only=True)` para que lleguen como número
 (31.7393), que es lo que necesita Leaflet.
 """
+from datetime import timedelta
+from decimal import ROUND_HALF_UP, Decimal
+
+from django.db import transaction
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Reaccion, Reporte, TipoIncidente
+from .imagenes import procesar_imagen
+from .models import Imagen, Reaccion, Reporte, TipoIncidente, validar_latitud, validar_longitud
 from .zonas import dentro_de_juarez
+
+MAX_IMAGENES = 3
+# El reloj del celular puede ir algo adelantado: se toleran unos minutos "en el futuro".
+MARGEN_FECHA_FUTURA = timedelta(minutes=5)
 
 # Convierte un datetime al mismo formato ISO que usan los demás campos de fecha.
 fecha_iso = serializers.DateTimeField().to_representation
@@ -132,6 +142,83 @@ class ReporteMapaSerializer(serializers.ModelSerializer):
         model = Reporte
         fields = ['id', 'latitud', 'longitud', 'tipo', 'tipo_etiqueta', 'fecha_incidente', 'titulo', 'direccion', 'zona']
 
+
+
+# ---------- creación de reportes (POST /api/reportes/) ----------
+
+class CoordenadaField(serializers.DecimalField):
+    """Decimal de 6 decimales que REDONDEA en vez de rechazar.
+
+    El GPS manda valores como 31.73932847261. DRF valida la cantidad de decimales
+    antes de redondear (validate_precision corre antes que quantize), así que el
+    campo normal los rechazaría. Aquí redondeamos primero (6 decimales ≈ 10 cm).
+    """
+
+    SEIS_DECIMALES = Decimal('0.000001')
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault('max_digits', 9)
+        kwargs.setdefault('decimal_places', 6)
+        super().__init__(**kwargs)
+
+    def validate_precision(self, value):
+        redondeado = value.quantize(self.SEIS_DECIMALES, rounding=ROUND_HALF_UP)
+        return super().validate_precision(redondeado)
+
+
+class ReporteCreateSerializer(serializers.ModelSerializer):
+    """Valida la entrada del POST. La respuesta se arma con ReporteDetailSerializer.
+
+    `usuario`, `estado`, `zona` y las fechas automáticas no están en `fields`:
+    si el cliente los manda, se ignoran. Los asigna el servidor.
+    """
+
+    # Al declarar el campo a mano se pierden los validadores del modelo: se agregan aquí.
+    latitud = CoordenadaField(validators=[validar_latitud])
+    longitud = CoordenadaField(validators=[validar_longitud])
+    imagenes = serializers.ListField(
+        child=serializers.FileField(),
+        max_length=MAX_IMAGENES,
+        required=False,
+        write_only=True,
+    )
+
+    class Meta:
+        model = Reporte
+        fields = [
+            'tipo', 'tipo_otro', 'titulo', 'descripcion', 'gravedad',
+            'latitud', 'longitud', 'direccion', 'fecha_incidente', 'imagenes',
+        ]
+
+    def validate_fecha_incidente(self, valor):
+        if valor > timezone.now() + MARGEN_FECHA_FUTURA:
+            raise serializers.ValidationError('La fecha del incidente no puede estar en el futuro.')
+        return valor
+
+    def validate_imagenes(self, archivos):
+        # Devuelve [(bytes_limpios, tipo_mime), ...]; create() los guarda.
+        return [procesar_imagen(archivo, f'La imagen {i}') for i, archivo in enumerate(archivos, start=1)]
+
+    def validate(self, datos):
+        # Misma regla que Reporte.clean(): ModelSerializer no llama a clean().
+        tipo_otro = datos.get('tipo_otro', '').strip()
+        datos['tipo_otro'] = tipo_otro
+        if datos['tipo'].es_otro and not tipo_otro:
+            raise serializers.ValidationError({'tipo_otro': 'Describe el tipo de incidente.'})
+        return datos
+
+    def create(self, validated_data):
+        imagenes = validated_data.pop('imagenes', [])
+        # Todo o nada: si falla una imagen, tampoco queda el reporte.
+        with transaction.atomic():
+            reporte = Reporte.objects.create(
+                usuario=self.context['request'].user,
+                estado=Reporte.Estado.SIN_RESOLVER,
+                **validated_data,
+            )   # Reporte.save() calcula la zona
+            for contenido, tipo_mime in imagenes:
+                Imagen.objects.create(reporte=reporte, contenido=contenido, tipo_mime=tipo_mime)
+        return reporte
 
 # ---------- geocodificación (solo validan los query params) ----------
 

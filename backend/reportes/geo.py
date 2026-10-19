@@ -23,6 +23,7 @@ from .zonas import LAT_MAX, LAT_MIN, LNG_MAX, LNG_MIN, dentro_de_juarez
 TIMEOUT_SEGUNDOS = 5
 INTERVALO_MINIMO = 1.0               # segundos entre peticiones a Nominatim
 CACHE_SEGUNDOS = 60 * 60 * 24        # 24 horas
+MAX_CANDIDATOS = 5                   # opciones que devuelve la búsqueda (calles largas tienen varias)
 SIN_RESULTADO = {}                   # se guarda en caché: "Nominatim respondió, pero vacío"
 
 # Llaves de dirección que en México suelen traer la colonia, en orden de preferencia
@@ -87,42 +88,55 @@ def direccion_corta(address, display_name=''):
 
 def _clave_busqueda(texto):
     # Normaliza ("  AV.  Juárez " == "av. juárez") y usa un hash: la clave queda corta y sin espacios.
+    # v2 y el límite van en la clave: si cambia el número de candidatos, no se mezclan cachés viejas.
     normalizado = ' '.join(texto.lower().split())
-    return 'geo:buscar:' + hashlib.sha256(normalizado.encode()).hexdigest()
+    return f'geo:buscar:v2:{MAX_CANDIDATOS}:' + hashlib.sha256(normalizado.encode()).hexdigest()
 
 
 def buscar(texto):
-    """Dirección escrita -> {'lat', 'lng', 'direccion'} dentro de Juárez, o None si no hay resultado."""
+    """Dirección escrita -> lista de hasta 5 candidatos {'lat', 'lng', 'direccion'} dentro de Juárez.
+
+    La lista viene vacía si no hay resultado. Se descartan los candidatos fuera de Juárez
+    y los duplicados (misma dirección corta o coordenadas iguales a 5 decimales).
+    """
     clave = _clave_busqueda(texto)
     en_cache = cache.get(clave)
-    if en_cache is not None:
-        return en_cache or None
+    if en_cache is not None:   # una lista vacía también es un acierto de caché
+        return en_cache
 
     datos = _consultar('search', {
         'q': texto,
         'format': 'jsonv2',
         'addressdetails': 1,
-        'limit': 1,
+        'limit': MAX_CANDIDATOS,
         'countrycodes': 'mx',
         # viewbox: lon_min, lat_max, lon_max, lat_min; bounded=1 = solo dentro del rectángulo
         'viewbox': f'{LNG_MIN},{LAT_MAX},{LNG_MAX},{LAT_MIN}',
         'bounded': 1,
     })
 
-    resultado = SIN_RESULTADO
+    candidatos = []
+    direcciones_vistas = set()
+    coordenadas_vistas = set()
     try:
         for lugar in datos:
             lat, lng = float(lugar['lat']), float(lugar['lon'])
-            if dentro_de_juarez(lat, lng):  # doble control: descartamos lo que caiga fuera
-                direccion = direccion_corta(lugar.get('address', {}), lugar.get('display_name', ''))
-                resultado = {'lat': lat, 'lng': lng, 'direccion': direccion}
-                break
+            if not dentro_de_juarez(lat, lng):  # doble control: descartamos lo que caiga fuera
+                continue
+            direccion = direccion_corta(lugar.get('address', {}), lugar.get('display_name', ''))
+            coordenada = (round(lat, 5), round(lng, 5))
+            if direccion.lower() in direcciones_vistas or coordenada in coordenadas_vistas:
+                continue  # duplicado: misma dirección o casi el mismo punto
+            direcciones_vistas.add(direccion.lower())
+            coordenadas_vistas.add(coordenada)
+            candidatos.append({'lat': lat, 'lng': lng, 'direccion': direccion})
     except (KeyError, TypeError, ValueError) as error:  # respuesta con forma inesperada
         raise NominatimNoDisponible(str(error)) from error
 
+    candidatos = candidatos[:MAX_CANDIDATOS]
     # Solo llegamos aquí si Nominatim respondió bien: los errores nunca se guardan en caché.
-    cache.set(clave, resultado, CACHE_SEGUNDOS)
-    return resultado or None
+    cache.set(clave, candidatos, CACHE_SEGUNDOS)
+    return candidatos
 
 
 def inversa(lat, lng):
