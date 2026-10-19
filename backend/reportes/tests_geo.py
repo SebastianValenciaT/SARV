@@ -28,6 +28,11 @@ LUGAR_CHIHUAHUA = {   # Chihuahua capital: fuera de Juárez
 }
 
 
+def lugar(lat, lon, **address):
+    """Un resultado de /search de Nominatim con la dirección dada."""
+    return {'lat': lat, 'lon': lon, 'display_name': ', '.join(address.values()), 'address': address}
+
+
 def respuesta(json_data, status_code=200):
     """Objeto que imita a requests.Response con lo que usa geo.py."""
     falsa = mock.Mock()
@@ -61,9 +66,9 @@ class BuscarTests(BaseGeo):
         self.get.return_value = respuesta([LUGAR_JUAREZ])
         response = self.buscar('Av. Tecnológico 1340')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, {
-            'lat': 31.7105, 'lng': -106.4245, 'direccion': 'Avenida Tecnológico 1340, Col. Partido Romero',
-        })
+        candidato = {'lat': 31.7105, 'lng': -106.4245, 'direccion': 'Avenida Tecnológico 1340, Col. Partido Romero'}
+        # Nivel superior = primer candidato (contrato anterior) + la lista completa
+        self.assertEqual(response.data, {**candidato, 'resultados': [candidato]})
 
     def test_parametros_que_exige_la_politica_de_nominatim(self):
         self.get.return_value = respuesta([LUGAR_JUAREZ])
@@ -76,9 +81,43 @@ class BuscarTests(BaseGeo):
         self.assertEqual(params['countrycodes'], 'mx')
         self.assertEqual(params['viewbox'], f'{LNG_MIN},{LAT_MAX},{LNG_MAX},{LAT_MIN}')
         self.assertEqual(params['bounded'], 1)
-        self.assertEqual(params['limit'], 1)
+        self.assertEqual(params['limit'], 5)
         self.assertEqual(params['format'], 'jsonv2')
         self.assertEqual(params['addressdetails'], 1)
+
+    def test_varios_candidatos(self):
+        otro = lugar('31.690000', '-106.500000', road='Avenida Tecnológico', suburb='Campestre')
+        tercero = lugar('31.650000', '-106.440000', road='Avenida Tecnológico', suburb='Las Torres')
+        self.get.return_value = respuesta([LUGAR_JUAREZ, otro, tercero])
+        data = self.buscar('Av. Tecnológico').data
+        self.assertEqual([c['direccion'] for c in data['resultados']], [
+            'Avenida Tecnológico 1340, Col. Partido Romero',
+            'Avenida Tecnológico, Col. Campestre',
+            'Avenida Tecnológico, Col. Las Torres',
+        ])
+        self.assertEqual(data['direccion'], data['resultados'][0]['direccion'])
+        self.assertEqual((data['lat'], data['lng']), (31.7105, -106.4245))
+
+    def test_elimina_duplicados_por_direccion_o_por_coordenadas(self):
+        misma_direccion = lugar('31.690000', '-106.500000', **DIRECCION_JUAREZ)
+        mismo_punto = lugar('31.7105004', '-106.4244996', road='Otra calle')   # redondea a 31.71050, -106.42450
+        distinto = lugar('31.650000', '-106.440000', road='Avenida de las Torres')
+        self.get.return_value = respuesta([LUGAR_JUAREZ, misma_direccion, mismo_punto, distinto])
+        resultados = self.buscar('Av. Tecnológico').data['resultados']
+        self.assertEqual([c['direccion'] for c in resultados],
+                         ['Avenida Tecnológico 1340, Col. Partido Romero', 'Avenida de las Torres'])
+
+    def test_candidato_fuera_de_juarez_se_descarta_entre_varios(self):
+        dentro = lugar('31.650000', '-106.440000', road='Avenida de las Torres')
+        self.get.return_value = respuesta([LUGAR_CHIHUAHUA, dentro])
+        data = self.buscar('Avenida').data
+        self.assertEqual(len(data['resultados']), 1)
+        self.assertEqual(data['direccion'], 'Avenida de las Torres')   # el primero válido pasa arriba
+
+    def test_maximo_cinco_candidatos(self):
+        lugares = [lugar(f'31.6{i}0000', '-106.450000', road=f'Calle {i}') for i in range(7)]
+        self.get.return_value = respuesta(lugares)
+        self.assertEqual(len(self.buscar('Calle').data['resultados']), 5)
 
     def test_sin_resultado_responde_404(self):
         self.get.return_value = respuesta([])
