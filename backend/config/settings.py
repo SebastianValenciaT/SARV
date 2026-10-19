@@ -163,5 +163,6 @@ REST_FRAMEWORK = {
     # Límites por scope (ScopedRateThrottle): por usuario con sesión o por IP si es anónimo.
     'DEFAULT_THROTTLE_RATES': {
         'geo': '30/min',
+        'reportes_crear': '20/hour',   # solo POST /api/reportes/ (cuenta todos los intentos)
     },
 }

@@ -9,6 +9,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import Throttled
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -75,6 +76,18 @@ class ReporteListCreateView(generics.ListCreateAPIView):
     """GET /api/reportes/ — listado paginado público, del más reciente al más antiguo.
     POST /api/reportes/ — crea un reporte (requiere sesión; multipart con hasta 3 imágenes).
     """
+
+    throttle_scope = 'reportes_crear'   # tasa en settings: REST_FRAMEWORK['DEFAULT_THROTTLE_RATES']
+
+    def get_throttles(self):
+        # Solo el POST tiene límite por usuario; listar sigue libre.
+        if self.request.method == 'POST':
+            return [ScopedRateThrottle()]
+        return []
+
+    def throttled(self, request, wait):
+        # Mismo 429 de DRF, con un mensaje propio (DRF agrega cuántos segundos faltan).
+        raise Throttled(wait, detail='Has enviado demasiados reportes. Intenta de nuevo más tarde.')
 
     def get_permissions(self):
         # El permiso depende del método: leer es público, crear requiere sesión.

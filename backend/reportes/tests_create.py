@@ -8,6 +8,7 @@ from decimal import Decimal
 from io import BytesIO
 from unittest import mock
 
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import DatabaseError
 from django.urls import reverse
@@ -15,6 +16,7 @@ from django.utils import timezone
 from PIL import ExifTags, Image
 from rest_framework import status
 from rest_framework.test import APITestCase
+from rest_framework.throttling import ScopedRateThrottle
 
 from usuarios.models import Usuario
 
@@ -50,6 +52,7 @@ def gps_de(contenido):
 
 class BaseCreacion(APITestCase):
     def setUp(self):
+        cache.clear()   # los contadores del throttle viven en la caché: cada prueba empieza en cero
         self.usuario = Usuario.objects.create_user('ana@correo.mx', 'secreto1', nombre='Ana')
         self.otro = Usuario.objects.create_user('otro@correo.mx', 'secreto2', nombre='Otro')
         self.bache = TipoIncidente.objects.get(nombre='Bache')
@@ -228,3 +231,32 @@ class TransaccionTests(BaseCreacion):
         self.assertEqual(len(llamadas), 2)
         self.assertEqual(Reporte.objects.count(), 0)
         self.assertEqual(Imagen.objects.count(), 0)
+
+
+class LimiteDeReportesTests(BaseCreacion):
+    """Throttle del POST. Se baja la tasa a 2/hora para no crear 20 reportes;
+    como la ventana es de una hora, la prueba no depende del reloj real."""
+
+    def test_post_limitado_por_usuario(self):
+        with mock.patch.object(ScopedRateThrottle, 'THROTTLE_RATES', {'reportes_crear': '2/hour'}):
+            self.assertEqual(self.post().status_code, status.HTTP_201_CREATED)
+            self.assertEqual(self.post().status_code, status.HTTP_201_CREATED)
+            response = self.post()
+            self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+            self.assertIn('demasiados reportes', response.data['detail'])
+            self.assertEqual(Reporte.objects.count(), 2)
+
+            # Otro usuario tiene su propio contador
+            self.client.force_authenticate(self.otro)
+            self.assertEqual(self.post().status_code, status.HTTP_201_CREATED)
+
+    def test_intentos_invalidos_tambien_cuentan(self):
+        with mock.patch.object(ScopedRateThrottle, 'THROTTLE_RATES', {'reportes_crear': '2/hour'}):
+            self.post(descripcion='corta')
+            self.post(descripcion='corta')
+            self.assertEqual(self.post().status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_el_get_no_tiene_limite(self):
+        with mock.patch.object(ScopedRateThrottle, 'THROTTLE_RATES', {'reportes_crear': '2/hour'}):
+            for _ in range(5):
+                self.assertEqual(self.client.get(URL).status_code, status.HTTP_200_OK)
