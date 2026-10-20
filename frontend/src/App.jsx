@@ -4,6 +4,7 @@ import Layout from './components/layout/Layout';
 import MapaReportes from './pages/MapaReportes';
 import ListaReportes from './pages/ListaReportes';
 import DetalleReporte from './pages/DetalleReporte';
+import CrearReporte from './pages/CrearReporte';
 import api from './services/api';
 
 function Inicio() {
@@ -35,6 +36,7 @@ function App() {
       <Route path="/mapa" element={<Layout><MapaReportes /></Layout>} />
       <Route path="/reportes" element={<Layout><ListaReportes /></Layout>} />
       <Route path="/reportes/:id" element={<Layout><DetalleReporte /></Layout>} />
+      <Route path="/crear-reporte" element={<Layout><CrearReporte /></Layout>} />
       <Route path="/login" element={<Layout><Placeholder title="Iniciar sesión" /></Layout>} />
       <Route path="/registro" element={<Layout><Placeholder title="Registrarse" /></Layout>} />
       <Route path="/mis-reportes" element={<Layout><Placeholder title="Mis reportes" /></Layout>} />
