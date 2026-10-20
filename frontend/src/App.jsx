@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Layout from './components/layout/Layout';
 import Alert from './components/common/Alerts';
 import api from './services/api';
+import MisReportes from './pages/MisReportes';
 
 function Inicio() {
   const [status, setStatus] = useState('checking...');
@@ -50,7 +51,7 @@ function App() {
       <Route path="/reportes" element={<Layout><Placeholder title="Reportes" /></Layout>} />
       <Route path="/login" element={<Layout><Placeholder title="Iniciar sesión" /></Layout>} />
       <Route path="/registro" element={<Layout><Placeholder title="Registrarse" /></Layout>} />
-      <Route path="/mis-reportes" element={<Layout><Placeholder title="Mis reportes" /></Layout>} />
+      <Route path="/mis-reportes" element={<Layout><MisReportes /></Layout>} />
     </Routes>
   );
 }
