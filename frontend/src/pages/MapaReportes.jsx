@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Marker, useMap } from 'react-leaflet';
+import { useState } from 'react';
+import { Marker } from 'react-leaflet';
 import { Link } from 'react-router-dom';
 import Alert from '../components/common/Alerts';
 import Icon from '../components/common/Icon';
+import CentrarEn from '../components/mapa/CentrarEn';
 import MapaBase from '../components/mapa/MapaBase';
 import { crearPinIcon } from '../components/mapa/pinIcon';
 import ReportesHeader from '../components/reportes/ReportesHeader';
@@ -15,24 +16,6 @@ import './MapaReportes.css';
 
 // Categorias rapidas (por nombre del tipo) que se muestran como chips sobre la lista
 const CHIPS = ['Bache', 'Choque', 'Inundación'];
-const ZOOM_ENFOQUE = 15;
-
-/**
- * CentrarEn: mueve el mapa con animacion cuando cambia el reporte enfocado.
- * Debe ir dentro de <MapaBase> porque useMap() solo funciona dentro del mapa.
- */
-function CentrarEn({ reporte }) {
-  const map = useMap();
-  const latitud = reporte?.latitud;
-  const longitud = reporte?.longitud;
-
-  useEffect(() => {
-    if (latitud == null || longitud == null) return;
-    map.flyTo([latitud, longitud], Math.max(map.getZoom(), ZOOM_ENFOQUE), { duration: 0.8 });
-  }, [map, latitud, longitud]);
-
-  return null;
-}
 
 /**
  * Vista F — Mapa y reportes (vista mapa).
@@ -145,7 +128,7 @@ function MapaReportes() {
                 />
               );
             })}
-            <CentrarEn reporte={enfocado} />
+            <CentrarEn latitud={enfocado?.latitud} longitud={enfocado?.longitud} />
           </MapaBase>
 
           <div className="mapa-sort">
