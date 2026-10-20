@@ -36,3 +36,21 @@ export async function getReportesMapa(params, config) {
   const { data } = await api.get('/mapa/reportes/', { ...config, params: limpiarParams(params) });
   return data;
 }
+
+/*
+  Crea un reporte. `formData` trae los campos y las fotos (clave `imagenes`
+  repetida, una por archivo). Responde con el JSON del detalle.
+
+  ¿Por qué el header? api.js usa 'application/json' por defecto, y con ese
+  header axios convertiría el FormData a JSON (los archivos se perderían).
+  Al indicar multipart, axios deja el FormData intacto y el navegador escribe
+  el header real con su "boundary" (el separador entre campos).
+  TODO(auth): el token lo agregará el cliente de api.js cuando exista useAuth().
+*/
+export async function crearReporte(formData, config) {
+  const { data } = await api.post('/reportes/', formData, {
+    ...config,
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
