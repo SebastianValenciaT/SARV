@@ -1,0 +1,215 @@
+/* Contenedor principal */
+.registro-page {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Área de contenido dividida en dos columnas */
+.registro-content {
+  flex: 1;
+  display: flex;
+  width: 100%;
+}
+
+/* Mitad izquierda: Imagen */
+.registro-left-panel {
+  flex: 1;
+  background-image: url('../assets/images/catedral.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Mitad derecha: Fondo blanco con formulario */
+.registro-right-panel {
+  flex: 1;
+  background-color: #FFFFFF;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px; /* Reducido para dar más espacio arriba y abajo */
+}
+
+.registro-form-container {
+  width: 100%;
+  max-width: 440px;
+}
+
+/* Títulos y alertas */
+.registro-title {
+  color: #1B2233;
+  font-size: 22px; /* Ligeramente más pequeño */
+  font-weight: 800;
+  margin-bottom: 16px; /* Reducido de 30px a 16px */
+  letter-spacing: -0.5px;
+}
+
+.registro-error-alert {
+  background-color: #FDE8E8;
+  color: #C81E1E;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+/* Formulario e inputs */
+.registro-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Reducido de 16px a 10px */
+}
+
+/* Nueva clase para agrupar Nombre y Apellido */
+.form-row-doble {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.form-row-doble .form-group {
+  flex: 1; /* Hace que ambos campos midan exactamente la mitad */
+}
+
+/* Espacio de las etiquetas (labels) */
+.form-group label {
+  display: block;
+  font-size: 13px; /* Reducido de 14px a 13px */
+  color: #1B2233;
+  font-weight: 600;
+  margin-bottom: 4px; /* Reducido de 6px a 4px */
+}
+
+.asterisk {
+  color: #D32F2F;
+}
+
+/* Hacer los inputs ligeramente menos altos */
+.registro-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px; /* Reducido de 12px 16px */
+  font-size: 13.5px;
+  background-color: #EEF1F8;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.registro-input:focus {
+  background-color: #FFFFFF;
+  border-color: #3F5EC2;
+  box-shadow: 0 0 0 3px rgba(63, 94, 194, 0.15);
+}
+
+/* Checkbox de privacidad */
+.privacidad-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.privacidad-wrapper label {
+  font-size: 13px;
+  color: #1B2233;
+  margin: 0;
+  font-weight: 500;
+}
+
+.link-privacidad {
+  color: #3F5EC2;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Hacer el botón ligeramente más compacto */
+.btn-registro-submit {
+  background-color: #3F5EC2;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 12px; /* Reducido de 14px a 12px */
+  font-size: 15px; /* Reducido de 16px a 15px */
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-top: 4px; 
+}
+
+.btn-registro-submit:hover {
+  background-color: #314CA3;
+}
+
+/* ======= VENTANA MODAL ======= */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #FFFFFF;
+  width: 90%;
+  max-width: 450px;
+  padding: 40px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-title {
+  font-size: 22px;
+  color: #1B2233;
+  font-weight: 800;
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.modal-text {
+  font-size: 14.5px;
+  color: #4A5568;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  text-align: justify;
+}
+
+.btn-modal-continuar {
+  background-color: #3F5EC2;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 30px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.btn-modal-continuar:hover {
+  background-color: #314CA3;
+}
+
+/* Ajuste para pantallas pequeñas (celulares) */
+@media (max-width: 768px) {
+  .registro-content {
+    flex-direction: column;
+  }
+  .registro-left-panel {
+    min-height: 200px;
+    flex: none;
+  }
+}
