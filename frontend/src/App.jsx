@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import Layout from './components/layout/Layout';
 import Alert from './components/common/Alerts';
+import CrearReporte from './pages/CrearReporte/CrearReporte';
 import api from './services/api';
 
 function Inicio() {
@@ -30,7 +31,7 @@ function Inicio() {
           onClose={() => setShowAlert(false)}
         />
       )} */}
-  
+
       <h1>SARV</h1>
       <p>Estado de la API: {status} </p>
     </div>
@@ -40,7 +41,7 @@ function Inicio() {
 // Funcion mientras se construyen las vistas
 function Placeholder({ title }) {
   return <h2>{title} — página en construcción</h2>;
-} 
+}
 
 function App() {
   return (
@@ -51,6 +52,7 @@ function App() {
       <Route path="/login" element={<Layout><Placeholder title="Iniciar sesión" /></Layout>} />
       <Route path="/registro" element={<Layout><Placeholder title="Registrarse" /></Layout>} />
       <Route path="/mis-reportes" element={<Layout><Placeholder title="Mis reportes" /></Layout>} />
+      <Route path="/crear-reporte" element={<Layout><CrearReporte /></Layout>} />
     </Routes>
   );
 }
