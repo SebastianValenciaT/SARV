@@ -47,3 +47,9 @@ export function formatRelativa(iso) {
 export function capitalizar(texto) {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
+
+// Valor para <input type="datetime-local">: "AAAA-MM-DDTHH:mm" en la hora del dispositivo
+export function fechaLocalParaInput(fecha) {
+  const local = new Date(fecha.getTime() - fecha.getTimezoneOffset() * MINUTO);
+  return local.toISOString().slice(0, 16);
+}
