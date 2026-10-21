@@ -25,11 +25,11 @@ export default function Registro() {
     if (error) setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const { nombre, apellido, correo, password, confirmPassword, aceptaPrivacidad } = formData;
 
-    // Validaciones del SRS
+    // Validaciones del frontend
     if (!nombre || !apellido || !correo || !password || !confirmPassword) {
       setError('Por favor, completa todos los campos obligatorios.');
       return;
@@ -47,11 +47,41 @@ export default function Registro() {
       return;
     }
 
-    // Aquí irá la petición al endpoint del backend
-    console.log('Datos listos para enviar al backend:', formData);
-    
-    // Simulación de registro exitoso hacia el login
-    // navigate('/login', { state: { message: '¡Cuenta creada exitosamente!' } });
+    // Petición al endpoint del backend
+    try {
+      const response = await fetch('http://localhost:8000/api/registro/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Mapeamos los datos del estado a lo que espera serializers.py
+        body: JSON.stringify({
+          nombre: nombre,
+          apellido: apellido,
+          email: correo, // El backend espera 'email', pero tu estado se llama 'correo'
+          password: password,
+          aceptaPrivacidad: aceptaPrivacidad
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Redirige al login y le pasa un estado para mostrar el banner azul (HU-027)
+        navigate('/login', { state: { message: '¡Cuenta creada exitosamente!' } });
+      } else {
+        // Muestra los errores que devuelva el servidor
+        console.error('Error del servidor:', data);
+        if (data.email) {
+          setError('El correo electrónico ya está en uso'); // Validado según caso de uso UC-03
+        } else {
+          setError('Ocurrió un error en el registro. Verifica tus datos.');
+        }
+      }
+    } catch (err) {
+      console.error('Error de red:', err);
+      setError('Error al conectar con el servidor. Verifica que el backend esté encendido.');
+    }
   };
 
   return (
