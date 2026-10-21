@@ -1,15 +1,16 @@
 import { Routes, Route } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import Layout from './components/layout/Layout';
-import Alert from './components/common/Alerts';
-import api from './services/api';
+import MapaReportes from './pages/MapaReportes';
+import ListaReportes from './pages/ListaReportes';
+import DetalleReporte from './pages/DetalleReporte';
+import CrearReporte from './pages/CrearReporte';
 import Login from './pages/Login';
 import Registro from './pages/Registro';
+import api from './services/api';
 
 function Inicio() {
   const [status, setStatus] = useState('checking...');
-  //comentado para prueba mensaje error alert (comentario linea 21)
-  // const [showAlert, setShowAlert] = useState(true);
 
   useEffect(() => {
     api.get('/ping/')
@@ -19,20 +20,6 @@ function Inicio() {
 
   return (
     <div>
-      {/*
-        DEMO temporal del componente Alert (actividad 2.4).
-        mensaje de error de UC-03 (correo duplicado).
-        Se deja comentado como evidencia de que el componente funciona;
-        cada pagina real tendra sus propios mensajes segun su logica.
-      */}
-      {/* {showAlert && (
-        <Alert
-          type="error"
-          message="El correo electrónico ya está en uso."
-          onClose={() => setShowAlert(false)}
-        />
-      )} */}
-  
       <h1>SARV</h1>
       <p>Estado de la API: {status} </p>
     </div>
@@ -42,14 +29,17 @@ function Inicio() {
 // Funcion mientras se construyen las vistas
 function Placeholder({ title }) {
   return <h2>{title} — página en construcción</h2>;
-} 
+}
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout><Inicio /></Layout>} />
-      <Route path="/mapa" element={<Layout><Placeholder title="Mapa" /></Layout>} />
-      <Route path="/reportes" element={<Layout><Placeholder title="Reportes" /></Layout>} />
+      <Route path="/mapa" element={<Layout><MapaReportes /></Layout>} />
+      <Route path="/reportes" element={<Layout><ListaReportes /></Layout>} />
+      <Route path="/reportes/:id" element={<Layout><DetalleReporte /></Layout>} />
+      <Route path="/crear-reporte" element={<Layout><CrearReporte /></Layout>} />
+      {/* Login y Registro dibujan su propio Navbar, por eso van sin Layout */}
       <Route path="/login" element={<Login />} />
       <Route path="/registro" element={<Registro />} />
       <Route path="/mis-reportes" element={<Layout><Placeholder title="Mis reportes" /></Layout>} />

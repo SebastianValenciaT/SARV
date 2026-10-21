@@ -1,0 +1,189 @@
+/*
+  UbicacionPicker.css — Selector de ubicación (texto + mapa con pin).
+  Controles de al menos 44 px de alto y texto de 16 px: cómodos al tacto y
+  evitan que iOS haga zoom al enfocar el campo.
+*/
+
+.ubi {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ubi-buscar {
+  display: flex;
+  gap: 8px;
+}
+
+.ubi-campo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text-subtle);
+}
+
+.ubi-campo:focus-within {
+  border-color: var(--color-primary);
+}
+
+.ubi-campo input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 16px;
+  color: var(--color-text);
+}
+
+.ubi-btn {
+  height: 46px;
+}
+
+.ubi-gps {
+  align-self: flex-start;
+  color: var(--color-primary);
+}
+
+/* aviso de privacidad */
+.ubi-aviso {
+  padding: 14px 16px;
+  border: 1px solid var(--color-info-bg);
+  border-radius: 12px;
+  background: var(--color-primary-soft);
+}
+
+.ubi-aviso-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.ubi-aviso-texto {
+  margin: 8px 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.ubi-aviso-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ubi-aviso-acciones button {
+  height: 44px;
+}
+
+/* candidatos de búsqueda */
+.ubi-candidatos ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ubi-candidato {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.ubi-candidato .icon {
+  flex: none;
+  color: var(--color-text-subtle);
+}
+
+.ubi-candidato.on {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.ubi-candidato.on .icon {
+  color: var(--color-primary);
+}
+
+/* mapa: MapaBase se posiciona absoluto dentro de este contenedor */
+.ubi-mapa {
+  position: relative;
+  height: 340px;
+  overflow: hidden;
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.ubi-ayuda {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  z-index: 1;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-float);
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none; /* deja pasar el toque al mapa */
+}
+
+/* mensajes debajo del mapa */
+.ubi-estado {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.ubi-cargando,
+.ubi-coords {
+  color: var(--color-text-muted);
+}
+
+.ubi-coords {
+  font-size: 12px;
+}
+
+.ubi-msg.error {
+  color: var(--color-error);
+}
+
+.ubi-msg.warning {
+  color: var(--color-warning);
+}
+
+@media (max-width: 600px) {
+  .ubi-mapa {
+    height: 300px;
+  }
+
+  .ubi-gps {
+    align-self: stretch;
+  }
+}

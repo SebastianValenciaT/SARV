@@ -25,11 +25,7 @@ function Navbar() {
                 Mapa
               </NavLink>
             </li>
-            <li>
-              <NavLink to="/reportes" className="navbar-link">
-                Reportes
-              </NavLink>
-            </li>
+
 
             {isAuthenticated && (
               <li>
