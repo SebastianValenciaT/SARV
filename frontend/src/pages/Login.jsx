@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar'; // Importación directa del Navbar del equipo
 import './Login.css';
+
 
 export default function Login() {
   const location = useLocation();
