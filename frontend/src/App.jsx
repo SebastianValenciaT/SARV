@@ -8,6 +8,7 @@ import CrearReporte from './pages/CrearReporte';
 import Login from './pages/Login';
 import Registro from './pages/Registro';
 import api from './services/api';
+import MisReportes from './pages/MisReportes';
 
 function Inicio() {
   const [status, setStatus] = useState('checking...');
@@ -26,10 +27,6 @@ function Inicio() {
   );
 }
 
-// Funcion mientras se construyen las vistas
-function Placeholder({ title }) {
-  return <h2>{title} — página en construcción</h2>;
-}
 
 function App() {
   return (
@@ -42,7 +39,7 @@ function App() {
       {/* Login y Registro dibujan su propio Navbar, por eso van sin Layout */}
       <Route path="/login" element={<Login />} />
       <Route path="/registro" element={<Registro />} />
-      <Route path="/mis-reportes" element={<Layout><Placeholder title="Mis reportes" /></Layout>} />
+      <Route path="/mis-reportes" element={<Layout><MisReportes /></Layout>} />
     </Routes>
   );
 }
