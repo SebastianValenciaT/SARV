@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+//import { useEffect, useState } from 'react';
 import Layout from './components/layout/Layout';
 import MapaReportes from './pages/MapaReportes';
 import ListaReportes from './pages/ListaReportes';
@@ -7,25 +7,9 @@ import DetalleReporte from './pages/DetalleReporte';
 import CrearReporte from './pages/CrearReporte';
 import Login from './pages/Login';
 import Registro from './pages/Registro';
-import api from './services/api';
 import MisReportes from './pages/MisReportes';
+import Inicio from './pages/Inicio';
 
-function Inicio() {
-  const [status, setStatus] = useState('checking...');
-
-  useEffect(() => {
-    api.get('/ping/')
-      .then((res) => setStatus(res.data.message))
-      .catch(() => setStatus('sin conexión con el backend'));
-  }, []);
-
-  return (
-    <div>
-      <h1>SARV</h1>
-      <p>Estado de la API: {status} </p>
-    </div>
-  );
-}
 
 
 function App() {

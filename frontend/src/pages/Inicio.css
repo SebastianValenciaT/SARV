@@ -1,0 +1,185 @@
+/*
+  Inicio.css — Estilos de la vista de inicio.
+  Usa unicamente las variables de theme.css.
+  Ubicacion sugerida: src/pages/Inicio.css
+*/
+ 
+/* El ancho y el padding horizontal ya los pone .app-content (Layout.css) */
+.inicio {
+  padding-bottom: 2rem;
+}
+ 
+.inicio h1,
+.inicio h2,
+.inicio h3 {
+  font-family: var(--font-heading);
+  color: var(--color-text);
+  margin: 0;
+}
+ 
+/* bienvenida */
+.inicio-bienvenida {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 48px;
+  padding: 1rem 0 2rem;
+}
+ 
+.inicio-bienvenida__texto h1 {
+  font-size: 2.5rem;
+  line-height: 1.15;
+  font-weight: 700;
+}
+ 
+.inicio-bienvenida__texto p {
+  margin: 20px 0 0;
+  max-width: 44ch;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+ 
+/* Espacio reservado para el mapa */
+.inicio-bienvenida__mapa {
+  min-height: 280px;
+  background-color: var(--color-primary-light);
+  border-radius: calc(var(--radius) * 2);
+}
+ 
+/* Reportes recientes */
+.inicio-reportes {
+  padding: 24px 0 32px;
+}
+ 
+.inicio-reportes h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+ 
+/* Espacio reservado para las tarjetas de reportes */
+.inicio-reportes__lista {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 20px;
+  min-height: 200px;
+}
+ 
+.inicio-reportes__accion {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+}
+ 
+.inicio-reportes__cta {
+  display: inline-block;
+  padding: 12px 32px;
+  border-radius: 999px;
+  background-color: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+  transition: background-color 0.15s;
+}
+ 
+.inicio-reportes__cta:hover {
+  background-color: var(--color-primary-hover);
+}
+ 
+.inicio-reportes__cta:focus-visible {
+  outline: 3px solid var(--color-primary-light);
+  outline-offset: 2px;
+}
+ 
+/* Pasos */
+.inicio-pasos {
+  padding-top: 2rem;
+  text-align: center;
+}
+ 
+.inicio-pasos h2 {
+  font-size: 2rem;
+  font-weight: 700;
+}
+ 
+.inicio-pasos__subtitulo {
+  margin: 12px 0 0;
+  color: var(--color-text-muted);
+}
+ 
+.inicio-pasos__lista {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-top: 40px;
+  text-align: left;
+}
+ 
+.paso {
+  padding: 32px;
+  background-color: var(--color-gray-light);
+  border-radius: calc(var(--radius) * 3);
+}
+ 
+.paso__icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+ 
+.paso__numero {
+  display: block;
+  margin-top: 24px;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+ 
+.paso h3 {
+  margin-top: 12px;
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+ 
+.paso p {
+  margin: 12px 0 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+ 
+/*  Responsive  */
+@media (max-width: 960px) {
+  .inicio-pasos__lista {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+ 
+@media (max-width: 760px) {
+  .inicio-bienvenida {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 0 0 1.5rem;
+  }
+ 
+  .inicio-bienvenida__texto h1 {
+    font-size: 2rem;
+  }
+ 
+  .inicio-reportes__lista {
+    grid-template-columns: 1fr;
+  }
+}
+ 
+@media (max-width: 520px) {
+  .inicio-pasos__lista {
+    grid-template-columns: 1fr;
+  }
+}
+ 
