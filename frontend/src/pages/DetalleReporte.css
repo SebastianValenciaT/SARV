@@ -373,3 +373,36 @@
   flex: 1;
   height: 40px;
 }
+
+/* nota bajo los tiles (reporte resuelto o vista del autor) */
+.detalle-react-nota {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+/* confirmación del autor antes de marcar como resuelto */
+.detalle-react-confirm {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius);
+  background: var(--color-warning-bg);
+}
+
+.detalle-react-confirm p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.detalle-react-confirm-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detalle-react-alert .alert {
+  margin: 14px 0 0;
+}

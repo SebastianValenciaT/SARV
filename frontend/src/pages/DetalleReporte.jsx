@@ -3,9 +3,12 @@ import { Link, useParams } from 'react-router-dom';
 import Alert from '../components/common/Alerts';
 import Icon from '../components/common/Icon';
 import MiniMap from '../components/common/MiniMap';
+import DenunciaPanel from '../components/reportes/DenunciaPanel';
+import ReaccionesCard from '../components/reportes/ReaccionesCard';
 import { iconoPorId } from '../constants/tipos';
 import { nombreZona } from '../constants/zonas';
 import { useReporte } from '../hooks/useReporte';
+import { getReporte } from '../services/reportes';
 import { useTipos } from '../hooks/useTipos';
 import { capitalizar, formatFechaHora, formatRelativa } from '../utils/fechas';
 import './DetalleReporte.css';
@@ -44,9 +47,21 @@ function VolverLink() {
  */
 function DetalleReporte() {
   const { id } = useParams();
-  const { data: reporte, loading, error } = useReporte(id);
+  // setData reemplaza el reporte con el detalle que responde el servidor tras
+  // reaccionar o denunciar: un solo origen de verdad, sin actualizaciones optimistas.
+  const { data: reporte, loading, error, setData } = useReporte(id);
   const { data: tipos } = useTipos();
   const [foto, setFoto] = useState(0);
+
+  // Vuelve a pedir el detalle (por ejemplo, tras un 409 o una denuncia duplicada).
+  // Si falla, se queda el detalle que ya se ve.
+  async function refrescar() {
+    try {
+      setData(await getReporte(id));
+    } catch {
+      // sin cambios
+    }
+  }
 
   if (loading) {
     return (
@@ -177,34 +192,13 @@ function DetalleReporte() {
               </div>
             </div>
 
-            <div className="card detalle-react">
-              <div className="lbl">Reaccionar a este reporte</div>
-              {/* TODO(auth): habilitar cuando exista inicio de sesión (reaccionar requiere login) */}
-              <div className="detalle-react-tiles">
-                <button
-                  type="button"
-                  className={`detalle-rt ${reporte.mi_reaccion === 'sin_resolver' ? 'on' : ''}`}
-                  disabled
-                  title="Inicia sesión para reaccionar"
-                  aria-pressed={reporte.mi_reaccion === 'sin_resolver'}
-                >
-                  <span className="detalle-rt-num">{reporte.reacciones.sin_resolver}</span>
-                  <Icon name="flag" />
-                  <span className="detalle-rt-label">Sin resolver</span>
-                </button>
-                <button
-                  type="button"
-                  className={`detalle-rt ok ${reporte.mi_reaccion === 'resuelto' ? 'on' : ''}`}
-                  disabled
-                  title="Inicia sesión para reaccionar"
-                  aria-pressed={reporte.mi_reaccion === 'resuelto'}
-                >
-                  <span className="detalle-rt-num">{reporte.reacciones.resuelto}</span>
-                  <Icon name="shield" />
-                  <span className="detalle-rt-label">Resuelto</span>
-                </button>
-              </div>
-            </div>
+            {/* key: al cambiar de reporte, su estado local empieza de cero */}
+            <ReaccionesCard
+              key={reporte.id}
+              reporte={reporte}
+              onActualizado={setData}
+              onRefrescar={refrescar}
+            />
           </div>
         </div>
 
@@ -236,20 +230,15 @@ function DetalleReporte() {
             ))}
           </div>
 
-          {/* TODO(auth): habilitar cuando exista inicio de sesión (denunciar requiere login) */}
-          {!reporte.es_autor && (
-            <button
-              type="button"
-              className="btn-outline btn-danger detalle-denunciar"
-              disabled
-              title="Inicia sesión para denunciar"
-            >
-              <Icon name="alert" size={15} />
-              {reporte.ya_denuncie ? 'Denuncia registrada' : 'Denunciar'}
-            </button>
-          )}
+          {/* No se muestra al autor (lo decide el propio panel con es_autor) */}
+          <DenunciaPanel
+            key={reporte.id}
+            reporte={reporte}
+            onActualizado={setData}
+            onRefrescar={refrescar}
+          />
 
-          {/* Solo lo ve el autor (es_autor llega en false hasta que exista login) */}
+          {/* Solo lo ve el autor (TODO(auth): es_autor llega en false hasta que api.js mande el token) */}
           {reporte.es_autor && (
             <div className="card detalle-author">
               <div className="detalle-author-name">{reporte.seguimiento[0].autor}</div>
