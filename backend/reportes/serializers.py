@@ -36,7 +36,8 @@ def url_imagen(request, imagen_id):
 class TipoIncidenteSerializer(serializers.ModelSerializer):
     class Meta:
         model = TipoIncidente
-        fields = ['id', 'nombre']
+        # duracion_horas: el formulario avisa cuánto se mostrará el reporte (null = sin límite)
+        fields = ['id', 'nombre', 'duracion_horas']
 
 
 class ReporteListSerializer(serializers.ModelSerializer):
@@ -46,13 +47,16 @@ class ReporteListSerializer(serializers.ModelSerializer):
     confirmaciones = serializers.IntegerField(read_only=True)    # annotate
     total_imagenes = serializers.IntegerField(read_only=True)    # annotate
     imagen_principal = serializers.SerializerMethodField()
+    # Estado efectivo: sin_resolver, resuelto o expirado (el expirado se calcula, no se guarda).
+    estado = serializers.CharField(source='estado_efectivo', read_only=True)
+    expira_en = serializers.DateTimeField(read_only=True)        # propiedad; null = sin límite
 
     class Meta:
         model = Reporte
         fields = [
             'id', 'titulo', 'descripcion', 'tipo', 'tipo_etiqueta', 'direccion', 'zona', 'estado',
-            'latitud', 'longitud', 'fecha_incidente', 'creado_en', 'confirmaciones', 'total_imagenes',
-            'imagen_principal',
+            'latitud', 'longitud', 'fecha_incidente', 'creado_en', 'expira_en', 'confirmaciones',
+            'total_imagenes', 'imagen_principal',
         ]
 
     def get_imagen_principal(self, obj):
