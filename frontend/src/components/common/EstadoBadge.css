@@ -1,0 +1,26 @@
+/* EstadoBadge.css — Colores por estado, con las variables de theme.css. */
+.estado-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.estado-sin-resolver {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.estado-resuelto {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.estado-expirado {
+  background: var(--color-gray);
+  color: var(--color-text-muted);
+}
