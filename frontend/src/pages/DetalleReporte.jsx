@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Alert from '../components/common/Alerts';
+import EstadoBadge from '../components/common/EstadoBadge';
 import Icon from '../components/common/Icon';
 import MiniMap from '../components/common/MiniMap';
 import DenunciaPanel from '../components/reportes/DenunciaPanel';
@@ -110,6 +111,7 @@ function DetalleReporte() {
         <div className="detalle-main">
           <h1 className="detalle-title">{reporte.titulo}</h1>
           <div className="row detalle-meta">
+            <EstadoBadge estado={reporte.estado} />
             <span className="row">
               <Icon name="clock" size={13} />
               Reportado {formatRelativa(reporte.creado_en)}
@@ -123,6 +125,12 @@ function DetalleReporte() {
               {reporte.confirmaciones} confirman
             </span>
           </div>
+          {reporte.estado === 'expirado' && (
+            <Alert
+              type="warning"
+              message={`Este reporte expiró el ${formatFechaHora(reporte.expira_en)}. Ya no aparece en el mapa ni en la lista y no admite reacciones ni denuncias.`}
+            />
+          )}
           <p className="detalle-desc">{reporte.descripcion}</p>
 
           <div className="card detalle-gal">

@@ -213,6 +213,12 @@ function CrearReporte() {
               ))}
             </div>
             <FieldError errores={errores} campo="tipo" />
+            {/* duracion_horas viene de /api/tipos/ (null = sin límite: no se avisa nada) */}
+            {tipoElegido?.duracion_horas > 0 && (
+              <p className="crear-ayuda">
+                Este tipo de reporte se mostrará durante {tipoElegido.duracion_horas} horas.
+              </p>
+            )}
 
             {esOtro && (
               <label className="crear-field">
