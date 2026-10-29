@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Alert from '../components/common/Alerts';
+import EstadoBadge from '../components/common/EstadoBadge';
 import Icon from '../components/common/Icon';
 import MiniMap from '../components/common/MiniMap';
 import ReportesHeader from '../components/reportes/ReportesHeader';
@@ -198,6 +199,8 @@ function ListaReportes() {
                   <span className="lista-feat-count">
                     <b>{destacado.confirmaciones}</b> confirman
                   </span>
+                  {/* Solo los estados que no son el normal (por defecto no llegan expirados) */}
+                  {destacado.estado !== 'sin_resolver' && <EstadoBadge estado={destacado.estado} />}
                   <span className="row lista-feat-actions">
                     {/* TODO(auth): habilitar cuando exista inicio de sesión (reaccionar requiere login) */}
                     <button
@@ -243,6 +246,9 @@ function ListaReportes() {
                 <div className="lista-rc-date">
                   <Icon name="cal" />
                   {formatCuando(reporte.fecha_incidente)}
+                  {reporte.estado !== 'sin_resolver' && (
+                    <EstadoBadge estado={reporte.estado} className="lista-rc-estado" />
+                  )}
                 </div>
                 <div className="lista-rc-count">
                   Confirmaciones<b>{reporte.confirmaciones}</b>

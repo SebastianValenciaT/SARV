@@ -52,7 +52,8 @@ export function mensajeAccion(error) {
     case 404:
       return 'Este reporte ya no existe.';
     case 409:
-      return data?.detail ?? 'Este reporte ya está resuelto y no admite cambios.';
+      // reporte_resuelto o reporte_expirado: el servidor manda el mensaje de cada caso
+      return data?.detail ?? 'Este reporte ya no admite cambios.';
     case 429:
       return data?.detail ?? 'Hiciste muchas acciones seguidas. Espera un momento e intenta de nuevo.';
     default:

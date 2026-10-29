@@ -378,3 +378,8 @@
     width: 100%;
   }
 }
+
+/* etiqueta de estado (Resuelto / Expirado) a la derecha de la fecha */
+.lista-rc-estado {
+  margin-left: auto;
+}
