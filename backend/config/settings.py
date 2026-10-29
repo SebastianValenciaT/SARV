@@ -164,5 +164,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'geo': '30/min',
         'reportes_crear': '20/hour',   # solo POST /api/reportes/ (cuenta todos los intentos)
+        'reacciones': '60/min',        # PUT y DELETE de reportes/{id}/reaccion/ (juntos)
+        'denuncias': '10/hour',        # POST reportes/{id}/denuncias/
     },
 }

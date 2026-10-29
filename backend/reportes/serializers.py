@@ -220,6 +220,25 @@ class ReporteCreateSerializer(serializers.ModelSerializer):
                 Imagen.objects.create(reporte=reporte, contenido=contenido, tipo_mime=tipo_mime)
         return reporte
 
+# ---------- reacciones y denuncias (solo validan el body) ----------
+
+class ReaccionSerializer(serializers.Serializer):
+    """Body de PUT /api/reportes/{id}/reaccion/: {tipo}."""
+
+    tipo = serializers.ChoiceField(choices=Reaccion.Tipo.choices)
+
+
+class DenunciaSerializer(serializers.Serializer):
+    """Body de POST /api/reportes/{id}/denuncias/: {motivo}.
+
+    CharField quita los espacios del inicio y del final ANTES de medir la longitud,
+    así "   corto   " cuenta 5 caracteres y un motivo de solo espacios queda vacío
+    (DRF lo rechaza con "Este campo no puede estar en blanco").
+    """
+
+    motivo = serializers.CharField(min_length=10, max_length=300)
+
+
 # ---------- geocodificación (solo validan los query params) ----------
 
 class GeoBuscarSerializer(serializers.Serializer):
