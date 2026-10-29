@@ -54,3 +54,28 @@ export async function crearReporte(formData, config) {
   });
   return data;
 }
+
+/*
+  Reacciones y denuncias. Las tres responden con el detalle actualizado
+  (mismo JSON que getReporte): la página lo usa tal cual para refrescar
+  conteos, mi_reaccion, ya_denuncie y estado.
+  TODO(auth): requieren sesión; hasta que api.js mande el token, el servidor
+  responde 403 a todos.
+*/
+
+// Crea o cambia mi reacción. tipo: 'sin_resolver' | 'resuelto'
+export async function reaccionar(id, tipo, config) {
+  const { data } = await api.put(`/reportes/${id}/reaccion/`, { tipo }, config);
+  return data;
+}
+
+// Quita mi reacción (si no tenía, responde igual)
+export async function quitarReaccion(id, config) {
+  const { data } = await api.delete(`/reportes/${id}/reaccion/`, config);
+  return data;
+}
+
+export async function denunciar(id, motivo, config) {
+  const { data } = await api.post(`/reportes/${id}/denuncias/`, { motivo }, config);
+  return data;
+}

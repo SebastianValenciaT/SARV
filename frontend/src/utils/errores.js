@@ -30,3 +30,32 @@ export function mensajeGeo(error) {
       return 'No pudimos consultar la dirección. Revisa tu conexión o coloca el pin a mano.';
   }
 }
+
+/*
+  ¿El error es por falta de sesión? 401, o un 403 genérico de DRF.
+  Los 403 con mensaje propio del servidor traen `codigo` (por ejemplo
+  'reporte_propio'): esos no son de sesión y se muestra su `detail`.
+*/
+export function esSinSesion(error) {
+  const status = statusDe(error);
+  return status === 401 || (status === 403 && !error.response.data?.codigo);
+}
+
+// Errores de reaccionar y denunciar (la falta de sesión se revisa antes con esSinSesion)
+export function mensajeAccion(error) {
+  const data = error?.response?.data;
+  switch (statusDe(error)) {
+    case 400:
+      return primerMensaje(data) ?? 'Revisa los datos e intenta de nuevo.';
+    case 403:
+      return data?.detail ?? 'No tienes permiso para hacer esto.';
+    case 404:
+      return 'Este reporte ya no existe.';
+    case 409:
+      return data?.detail ?? 'Este reporte ya está resuelto y no admite cambios.';
+    case 429:
+      return data?.detail ?? 'Hiciste muchas acciones seguidas. Espera un momento e intenta de nuevo.';
+    default:
+      return 'No pudimos completar la acción. Revisa tu conexión e intenta de nuevo.';
+  }
+}
