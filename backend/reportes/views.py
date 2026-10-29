@@ -2,14 +2,15 @@
 
 Las vistas genéricas de DRF (ListCreateAPIView, RetrieveAPIView) ya saben listar,
 paginar, crear y devolver 404; solo les decimos qué queryset y qué serializer usar.
-Todo es público para leer; crear un reporte requiere sesión.
+Todo es público para leer; crear un reporte, reaccionar y denunciar requieren sesión.
 """
+from django.db import IntegrityError, transaction
 from django.db.models import Count, F, Min, Prefetch, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import Throttled
+from rest_framework.exceptions import NotFound, Throttled
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -17,10 +18,12 @@ from rest_framework.views import APIView
 
 from . import geo
 from .filters import filtrar_reportes
-from .models import Imagen, Reaccion, Reporte, TipoIncidente
+from .models import Denuncia, Imagen, Reaccion, Reporte, TipoIncidente
 from .serializers import (
+    DenunciaSerializer,
     GeoBuscarSerializer,
     GeoInversaSerializer,
+    ReaccionSerializer,
     ReporteCreateSerializer,
     ReporteDetailSerializer,
     ReporteListSerializer,
@@ -148,6 +151,133 @@ def imagen_view(request, pk):
     # Evita que el navegador "adivine" otro tipo de contenido distinto a tipo_mime.
     response['X-Content-Type-Options'] = 'nosniff'
     return response
+
+
+# ---------- reacciones y denuncias (requieren sesión) ----------
+
+def error(mensaje, codigo, http_status):
+    """Error con mensaje propio. `codigo` permite al frontend distinguirlo de los
+    errores genéricos de DRF (por ejemplo, el 403 de "no hay sesión")."""
+    return Response({'detail': mensaje, 'codigo': codigo}, status=http_status)
+
+
+def error_resuelto():
+    # 409 Conflict: la petición es válida, pero choca con el estado del reporte (RN-14).
+    return error(
+        'Este reporte ya está resuelto y no admite cambios.', 'reporte_resuelto', status.HTTP_409_CONFLICT
+    )
+
+
+class AccionReporteView(APIView):
+    """Base de las acciones de un usuario sobre un reporte (reaccionar, denunciar).
+
+    Cada subclase define `throttle_scope` (tasa en settings) y `mensaje_throttle`.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    mensaje_throttle = 'Hiciste demasiadas acciones seguidas. Intenta de nuevo más tarde.'
+
+    def throttled(self, request, wait):
+        raise Throttled(wait, detail=self.mensaje_throttle)
+
+    def bloquear_reporte(self, pk):
+        """Lee el reporte y bloquea su fila hasta que termine la transacción (404 si no existe).
+
+        Debe llamarse dentro de transaction.atomic(). select_for_update() hace que, si el
+        autor lo está resolviendo justo ahora, esta petición espere y vea el estado nuevo.
+        Va sobre Reporte.objects simple: bloquear con JOINs y conteos no hace falta.
+        """
+        try:
+            return Reporte.objects.select_for_update().get(pk=pk)
+        except Reporte.DoesNotExist:
+            raise NotFound('Este reporte no existe.')
+
+    def responder_detalle(self, pk, http_status=status.HTTP_200_OK):
+        """Responde con el detalle actualizado (mismo JSON que GET /reportes/{id}/), así el
+        frontend actualiza conteos, mi_reaccion, ya_denuncie y estado con una sola respuesta."""
+        detalle = reportes_con_detalle().get(pk=pk)
+        salida = ReporteDetailSerializer(detalle, context={'request': self.request})
+        return Response(salida.data, status=http_status)
+
+
+class ReaccionView(AccionReporteView):
+    """PUT /api/reportes/{id}/reaccion/ {tipo} — crea o cambia mi reacción.
+    DELETE /api/reportes/{id}/reaccion/ — quita mi reacción (idempotente).
+
+    El autor no reacciona a su propio reporte: su "Resuelto" marca el reporte como
+    resuelto (sin crear fila ni contar como confirmación) y su "Sin resolver" se ignora.
+    """
+
+    throttle_scope = 'reacciones'
+    mensaje_throttle = 'Reaccionaste demasiadas veces seguidas. Espera un momento e intenta de nuevo.'
+
+    def put(self, request, pk):
+        entrada = ReaccionSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)   # 400 si `tipo` falta o no es válido
+        tipo = entrada.validated_data['tipo']
+
+        with transaction.atomic():
+            reporte = self.bloquear_reporte(pk)
+            if not reporte.es_editable:
+                return error_resuelto()
+            if reporte.usuario_id == request.user.id:
+                if tipo == Reaccion.Tipo.RESUELTO:
+                    reporte.resolver()   # la lógica de RN-14 vive en el modelo
+            else:
+                # Una fila por usuario y reporte: si ya existe, solo cambia el tipo.
+                # Si dos peticiones llegan a la vez, Django atrapa el IntegrityError
+                # del UniqueConstraint y vuelve a leer la fila (no se duplica).
+                Reaccion.objects.update_or_create(
+                    reporte=reporte, usuario=request.user, defaults={'tipo': tipo}
+                )
+        return self.responder_detalle(pk)
+
+    def delete(self, request, pk):
+        with transaction.atomic():
+            reporte = self.bloquear_reporte(pk)
+            if not reporte.es_editable:
+                return error_resuelto()
+            # Si no había reacción, delete() no borra nada: la respuesta es la misma.
+            Reaccion.objects.filter(reporte=reporte, usuario=request.user).delete()
+        return self.responder_detalle(pk)
+
+
+class DenunciaView(AccionReporteView):
+    """POST /api/reportes/{id}/denuncias/ {motivo} — registra una denuncia.
+
+    Solo se guarda: el reporte no se oculta ni cambia (no hay panel de administración).
+    """
+
+    throttle_scope = 'denuncias'
+    mensaje_throttle = 'Enviaste demasiadas denuncias. Intenta de nuevo más tarde.'
+
+    def post(self, request, pk):
+        entrada = DenunciaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)   # 400 {motivo: [...]}
+
+        with transaction.atomic():
+            reporte = self.bloquear_reporte(pk)
+            if not reporte.es_editable:
+                return error_resuelto()
+            if reporte.usuario_id == request.user.id:
+                return error('No puedes denunciar tu propio reporte.', 'reporte_propio', status.HTTP_403_FORBIDDEN)
+            if Denuncia.objects.filter(reporte=reporte, usuario=request.user).exists():
+                return self.error_duplicada()
+            try:
+                # atomic() anidado = "savepoint": si el insert falla, solo se deshace
+                # esta parte y la transacción de afuera sigue siendo válida.
+                with transaction.atomic():
+                    Denuncia.objects.create(
+                        reporte=reporte, usuario=request.user, motivo=entrada.validated_data['motivo']
+                    )
+            except IntegrityError:
+                # Dos envíos simultáneos: el UniqueConstraint detiene al segundo.
+                return self.error_duplicada()
+        return self.responder_detalle(pk, status.HTTP_201_CREATED)
+
+    def error_duplicada(self):
+        return error('Ya denunciaste este reporte.', 'denuncia_duplicada', status.HTTP_400_BAD_REQUEST)
 
 
 # ---------- geocodificación (Nominatim, siempre a través del backend) ----------
