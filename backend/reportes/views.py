@@ -128,15 +128,17 @@ class ReporteDetailView(generics.RetrieveAPIView):
 
 
 class MapaReportesView(generics.ListAPIView):
-    """GET /api/mapa/reportes/ — pines ligeros, solo `sin_resolver`, sin paginar."""
+    """GET /api/mapa/reportes/ — pines ligeros, solo `sin_resolver` y no expirados, sin paginar."""
 
     serializer_class = ReporteMapaSerializer
     permission_classes = [AllowAny]
     pagination_class = None
 
     def get_queryset(self):
-        queryset = Reporte.objects.select_related('tipo').filter(estado=Reporte.Estado.SIN_RESOLVER)
-        return filtrar_reportes(queryset, self.request.query_params).order_by('-creado_en', '-id')
+        queryset = filtrar_reportes(Reporte.objects.select_related('tipo'), self.request.query_params)
+        # Después de los filtros: aunque llegue ?estado=expirado, el mapa nunca muestra expirados.
+        queryset = queryset.filter(estado=Reporte.Estado.SIN_RESOLVER).no_expirados()
+        return queryset.order_by('-creado_en', '-id')
 
 
 @api_view(['GET'])
@@ -161,11 +163,14 @@ def error(mensaje, codigo, http_status):
     return Response({'detail': mensaje, 'codigo': codigo}, status=http_status)
 
 
-def error_resuelto():
-    # 409 Conflict: la petición es válida, pero choca con el estado del reporte (RN-14).
-    return error(
-        'Este reporte ya está resuelto y no admite cambios.', 'reporte_resuelto', status.HTTP_409_CONFLICT
-    )
+def error_solo_lectura(reporte):
+    """409 Conflict: la petición es válida, pero el reporte es de solo lectura (RN-14).
+    El mensaje y el `codigo` dicen por qué: resuelto o expirado."""
+    if reporte.estado == Reporte.Estado.RESUELTO:
+        return error(
+            'Este reporte ya está resuelto y no admite cambios.', 'reporte_resuelto', status.HTTP_409_CONFLICT
+        )
+    return error('Este reporte expiró y ya no admite cambios.', 'reporte_expirado', status.HTTP_409_CONFLICT)
 
 
 class AccionReporteView(APIView):
@@ -187,6 +192,7 @@ class AccionReporteView(APIView):
         Debe llamarse dentro de transaction.atomic(). select_for_update() hace que, si el
         autor lo está resolviendo justo ahora, esta petición espere y vea el estado nuevo.
         Va sobre Reporte.objects simple: bloquear con JOINs y conteos no hace falta.
+        (es_editable lee el tipo para la expiración: es una consulta más, sin bloqueo).
         """
         try:
             return Reporte.objects.select_for_update().get(pk=pk)
@@ -220,7 +226,7 @@ class ReaccionView(AccionReporteView):
         with transaction.atomic():
             reporte = self.bloquear_reporte(pk)
             if not reporte.es_editable:
-                return error_resuelto()
+                return error_solo_lectura(reporte)
             if reporte.usuario_id == request.user.id:
                 if tipo == Reaccion.Tipo.RESUELTO:
                     reporte.resolver()   # la lógica de RN-14 vive en el modelo
@@ -237,7 +243,7 @@ class ReaccionView(AccionReporteView):
         with transaction.atomic():
             reporte = self.bloquear_reporte(pk)
             if not reporte.es_editable:
-                return error_resuelto()
+                return error_solo_lectura(reporte)
             # Si no había reacción, delete() no borra nada: la respuesta es la misma.
             Reaccion.objects.filter(reporte=reporte, usuario=request.user).delete()
         return self.responder_detalle(pk)
@@ -259,7 +265,7 @@ class DenunciaView(AccionReporteView):
         with transaction.atomic():
             reporte = self.bloquear_reporte(pk)
             if not reporte.es_editable:
-                return error_resuelto()
+                return error_solo_lectura(reporte)
             if reporte.usuario_id == request.user.id:
                 return error('No puedes denunciar tu propio reporte.', 'reporte_propio', status.HTTP_403_FORBIDDEN)
             if Denuncia.objects.filter(reporte=reporte, usuario=request.user).exists():
