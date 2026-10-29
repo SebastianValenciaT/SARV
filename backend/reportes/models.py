@@ -1,7 +1,10 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator, MinLengthValidator
 from django.db import models
+from django.db.models import DateTimeField, DurationField, ExpressionWrapper, F, Q, Value
 from django.utils import timezone
 
 from .zonas import LAT_MAX, LAT_MIN, LNG_MAX, LNG_MIN, zona_de
@@ -24,6 +27,13 @@ class TipoIncidente(models.Model):
 
     nombre = models.CharField(max_length=60, unique=True)
     descripcion = models.CharField(max_length=200, blank=True)
+    duracion_horas = models.PositiveSmallIntegerField(
+        'duración (horas)',
+        null=True,
+        blank=True,
+        help_text='Horas que un reporte de este tipo se muestra, contadas desde que se publica '
+                  '(creado_en). Vacío = sin límite (nunca expira).',
+    )
 
     class Meta:
         verbose_name = 'tipo de incidente'
@@ -38,7 +48,57 @@ class TipoIncidente(models.Model):
         return self.nombre == self.NOMBRE_OTRO
 
 
+class ReporteQuerySet(models.QuerySet):
+    """Consultas de reportes que dependen de la expiración (se calcula, no se guarda).
+
+    Es la versión "en base de datos" de Reporte.esta_expirado: sirve para filtrar
+    mapa y lista sin recorrer los reportes en Python. Las dos deben coincidir
+    (hay una prueba que lo revisa justo en el límite).
+    `ahora` se calcula en Python (timezone.now()) y viaja como parámetro, no se
+    usa NOW() de la base: así las pruebas pueden congelar el tiempo.
+    """
+
+    def con_expiracion(self):
+        """Anota `expira_en_bd` = creado_en + duracion_horas * 1 hora.
+
+        En PostgreSQL queda `creado_en + (duracion_horas * interval '1 hour')`.
+        Si el tipo no tiene duración (NULL), el resultado también es NULL.
+        ExpressionWrapper le dice a Django de qué tipo es el resultado, porque
+        no puede adivinarlo al multiplicar un entero por una duración.
+        """
+        if 'expira_en_bd' in self.query.annotations:
+            return self   # ya está anotado (por ejemplo, lista + filtros)
+        duracion = ExpressionWrapper(
+            F('tipo__duracion_horas') * Value(timedelta(hours=1)), output_field=DurationField()
+        )
+        return self.annotate(
+            expira_en_bd=ExpressionWrapper(F('creado_en') + duracion, output_field=DateTimeField())
+        )
+
+    def expirados(self, ahora=None):
+        """Sin resolver y con su duración cumplida (ahora >= expira_en)."""
+        ahora = ahora or timezone.now()
+        return self.con_expiracion().filter(estado=Reporte.Estado.SIN_RESOLVER, expira_en_bd__lte=ahora)
+
+    def no_expirados(self, ahora=None):
+        """El complemento exacto de expirados(): los resueltos nunca desaparecen por el tiempo.
+
+        Se escribe en positivo y no con exclude(): con NULL de por medio (tipos sin
+        duración), un NOT (... AND expira_en_bd <= ahora) da NULL y la base descartaría
+        esas filas.
+        """
+        ahora = ahora or timezone.now()
+        return self.con_expiracion().filter(
+            Q(estado=Reporte.Estado.RESUELTO)
+            | Q(expira_en_bd__isnull=True)
+            | Q(expira_en_bd__gt=ahora)
+        )
+
+
 class Reporte(models.Model):
+    # Estado derivado: no se guarda (la columna `estado` sigue en sin_resolver).
+    ESTADO_EXPIRADO = 'expirado'
+
     class Estado(models.TextChoices):
         SIN_RESOLVER = 'sin_resolver', 'Sin resolver'
         RESUELTO = 'resuelto', 'Resuelto'
@@ -73,6 +133,8 @@ class Reporte(models.Model):
     actualizado_en = models.DateTimeField(auto_now=True)
     resuelto_en = models.DateTimeField(null=True, blank=True)
 
+    objects = ReporteQuerySet.as_manager()
+
     class Meta:
         ordering = ['-creado_en']
         indexes = [
@@ -89,9 +151,33 @@ class Reporte(models.Model):
         return self.tipo_otro if self.tipo.es_otro and self.tipo_otro else self.tipo.nombre
 
     @property
+    def expira_en(self):
+        """Momento en que deja de mostrarse, o None si su tipo no tiene límite."""
+        horas = self.tipo.duracion_horas
+        if horas is None or self.creado_en is None:
+            return None
+        return self.creado_en + timedelta(hours=horas)
+
+    @property
+    def esta_expirado(self):
+        """Versión en Python de ReporteQuerySet.expirados(). Gana "resuelto": un
+        reporte resuelto nunca está expirado, aunque haya pasado su duración."""
+        expira_en = self.expira_en
+        return (
+            self.estado == self.Estado.SIN_RESOLVER
+            and expira_en is not None
+            and timezone.now() >= expira_en
+        )
+
+    @property
+    def estado_efectivo(self):
+        """Estado que ve la API: sin_resolver, resuelto o expirado."""
+        return self.ESTADO_EXPIRADO if self.esta_expirado else self.estado
+
+    @property
     def es_editable(self):
-        """RN-14: un reporte resuelto es de solo lectura."""
-        return self.estado == self.Estado.SIN_RESOLVER
+        """RN-14: un reporte resuelto o expirado es de solo lectura (también para el autor)."""
+        return self.estado == self.Estado.SIN_RESOLVER and not self.esta_expirado
 
     def clean(self):
         super().clean()
