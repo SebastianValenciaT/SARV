@@ -8,6 +8,10 @@ a crear (útil porque las fechas son relativas a "ahora").
 La mayoría de los reportes son del usuario demo (para ver la vista del autor);
 los últimos son de vecinos, para probar con el usuario demo cómo se reacciona y se
 denuncia un reporte ajeno: uno sin reacción suya, uno que ya denunció y uno resuelto.
+
+Expiración: Choque, Tráfico e Inundación se muestran 24 h desde `creado_en`. Hay un
+Choque vigente y uno expirado (además de "Choque en Av. de las Torres", de hace 20 días);
+el expirado no sale en el mapa ni en la lista, pero su detalle sigue accesible.
 """
 from datetime import timedelta
 from io import BytesIO
@@ -44,12 +48,13 @@ REPORTES = [
          direccion='Av. Tecnológico y Plutarco Elías Calles', latitud='31.710500', longitud='-106.424500',
          gravedad='moderado', hace=timedelta(hours=5), imagenes=3, reacciones=['sin_resolver', 'sin_resolver'],
          descripcion='Bache de casi medio metro en el carril derecho, ya dañó llantas de varios autos.'),
+    # Choque y Tráfico duran 24 h: estas fechas los mantienen vigentes.
     dict(tipo='Choque', titulo='Choque menor sin lesionados', direccion='Periférico Camino Real',
-         latitud='31.690000', longitud='-106.500000', gravedad='leve', hace=timedelta(days=1, hours=3),
+         latitud='31.690000', longitud='-106.500000', gravedad='leve', hace=timedelta(hours=3),
          imagenes=1, reacciones=['sin_resolver'],
          descripcion='Dos autos chocaron por alcance; ocupan el carril izquierdo mientras llega tránsito.'),
     dict(tipo='Tráfico', titulo='Tráfico sin movimiento', direccion='Av. Insurgentes',
-         latitud='31.729000', longitud='-106.452000', gravedad='moderado', hace=timedelta(days=2),
+         latitud='31.729000', longitud='-106.452000', gravedad='moderado', hace=timedelta(hours=5),
          imagenes=0, reacciones=['sin_resolver', 'resuelto'],
          descripcion='Fila de más de un kilómetro en dirección al centro por obras en la avenida.'),
     dict(tipo='Obstrucción', titulo='Obstrucción por obra', direccion='Parque El Chamizal',
@@ -83,6 +88,15 @@ REPORTES = [
          direccion='Calle Mariscal', latitud='31.745000', longitud='-106.488000', gravedad='leve',
          hace=timedelta(days=6), imagenes=1, reacciones=['resuelto', 'resuelto'], resuelto=True,
          descripcion='Se juntaba el agua frente al mercado; ya limpiaron la alcantarilla.'),
+    # --- expiración (Choque = 24 h desde que se publica) ---
+    dict(tipo='Choque', titulo='Choque vigente en Av. López Mateos', direccion='Av. López Mateos',
+         latitud='31.716000', longitud='-106.437000', gravedad='moderado', hace=timedelta(hours=2),
+         imagenes=0, reacciones=['sin_resolver'],
+         descripcion='Choque entre dos autos en el carril de alta; tránsito ya está en el lugar.'),
+    dict(tipo='Choque', titulo='Choque expirado en Blvd. Zaragoza', direccion='Blvd. Zaragoza',
+         latitud='31.680000', longitud='-106.405000', gravedad='leve', hace=timedelta(hours=30),
+         imagenes=0, reacciones=['sin_resolver', 'sin_resolver'],
+         descripcion='Choque por alcance en el semáforo; se publicó hace más de 24 horas.'),
 ]
 
 COLORES = ['#3B82F6', '#F59E0B', '#10B981']
