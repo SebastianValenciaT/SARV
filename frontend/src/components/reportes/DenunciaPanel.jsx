@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import Alert from '../common/Alerts';
 import Icon from '../common/Icon';
 import AlertaAccion from './AlertaAccion';
+import { esSoloLectura } from '../../constants/estados';
 import { denunciar } from '../../services/reportes';
 import { statusDe } from '../../utils/errores';
 import './DenunciaPanel.css';
@@ -42,7 +43,7 @@ function DenunciaPanel({ reporte, onActualizado, onRefrescar }) {
 
   if (reporte.es_autor) return null;
 
-  const resuelto = reporte.estado === 'resuelto';
+  const soloLectura = esSoloLectura(reporte.estado);   // resuelto o expirado (RN-14)
   const largo = motivo.trim().length;
   const errorCampo = errorServidor ?? (intentado ? validarMotivo(motivo) : null);
 
@@ -79,12 +80,17 @@ function DenunciaPanel({ reporte, onActualizado, onRefrescar }) {
         setErrorServidor(data.motivo[0]);
       } else {
         setError(err);
-        if (statusDe(err) === 409) onRefrescar();   // se resolvió mientras tanto
+        if (statusDe(err) === 409) onRefrescar();   // se resolvió o expiró mientras tanto
       }
     } finally {
       setEnviando(false);
     }
   }
+
+  const textoSoloLectura =
+    reporte.estado === 'expirado'
+      ? 'No se puede denunciar un reporte expirado.'
+      : 'No se puede denunciar un reporte resuelto.';
 
   let textoBoton = 'Denunciar';
   if (reporte.ya_denuncie) textoBoton = 'Denuncia registrada';
@@ -94,8 +100,8 @@ function DenunciaPanel({ reporte, onActualizado, onRefrescar }) {
       <button
         type="button"
         className="btn-outline btn-danger detalle-denunciar"
-        disabled={reporte.ya_denuncie || resuelto || abierto}
-        title={resuelto && !reporte.ya_denuncie ? 'Este reporte ya está resuelto' : undefined}
+        disabled={reporte.ya_denuncie || soloLectura || abierto}
+        title={soloLectura && !reporte.ya_denuncie ? textoSoloLectura : undefined}
         aria-expanded={reporte.ya_denuncie ? undefined : abierto}
         aria-controls={reporte.ya_denuncie ? undefined : panelId}
         onClick={() => {
@@ -108,9 +114,7 @@ function DenunciaPanel({ reporte, onActualizado, onRefrescar }) {
         {textoBoton}
       </button>
 
-      {resuelto && !reporte.ya_denuncie && (
-        <p className="denuncia-nota">No se puede denunciar un reporte resuelto.</p>
-      )}
+      {soloLectura && !reporte.ya_denuncie && <p className="denuncia-nota">{textoSoloLectura}</p>}
 
       <Alert type="success" message={aviso} onClose={() => setAviso(null)} />
       <AlertaAccion error={error} onClose={() => setError(null)} />

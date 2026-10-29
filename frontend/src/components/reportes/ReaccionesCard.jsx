@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import Icon from '../common/Icon';
 import AlertaAccion from './AlertaAccion';
+import { esSoloLectura } from '../../constants/estados';
 import { quitarReaccion, reaccionar } from '../../services/reportes';
 import { statusDe } from '../../utils/errores';
 
@@ -12,6 +13,7 @@ const TILES = [
 // Texto del title de cada tile según quién lo ve y el estado del reporte
 function tituloTile(tile, reporte) {
   if (reporte.estado === 'resuelto') return 'Este reporte ya está resuelto';
+  if (reporte.estado === 'expirado') return 'Este reporte expiró';
   if (reporte.es_autor) {
     return tile.tipo === 'resuelto'
       ? 'Marcar mi reporte como resuelto'
@@ -39,7 +41,7 @@ function ReaccionesCard({ reporte, onActualizado, onRefrescar }) {
   const [error, setError] = useState(null);
   const notaId = useId();
 
-  const resuelto = reporte.estado === 'resuelto';
+  const soloLectura = esSoloLectura(reporte.estado);   // resuelto o expirado (RN-14)
   const esAutor = reporte.es_autor;
 
   async function enviar(accion) {
@@ -49,7 +51,7 @@ function ReaccionesCard({ reporte, onActualizado, onRefrescar }) {
       onActualizado(await accion());
     } catch (err) {
       setError(err);
-      // 409: alguien lo resolvió mientras tanto; se pide el detalle para mostrarlo.
+      // 409: se resolvió o expiró mientras tanto; se pide el detalle para mostrarlo.
       if (statusDe(err) === 409) onRefrescar();
     } finally {
       setEnviando(false);
@@ -74,8 +76,11 @@ function ReaccionesCard({ reporte, onActualizado, onRefrescar }) {
   }
 
   let nota = null;
-  if (resuelto) nota = 'Este reporte ya está resuelto; ya no admite reacciones ni denuncias.';
-  else if (esAutor) nota = 'Eres el autor: pulsa «Resuelto» cuando el problema ya esté solucionado.';
+  if (reporte.estado === 'resuelto') {
+    nota = 'Este reporte ya está resuelto; ya no admite reacciones ni denuncias.';
+  } else if (reporte.estado === 'expirado') {
+    nota = 'Este reporte expiró; ya no admite reacciones ni denuncias.';
+  } else if (esAutor) nota = 'Eres el autor: pulsa «Resuelto» cuando el problema ya esté solucionado.';
 
   return (
     <div className="card detalle-react">
@@ -84,7 +89,7 @@ function ReaccionesCard({ reporte, onActualizado, onRefrescar }) {
         {TILES.map((tile) => {
           const activo = reporte.mi_reaccion === tile.tipo;
           const deshabilitado =
-            resuelto || enviando || confirmando || (esAutor && tile.tipo === 'sin_resolver');
+            soloLectura || enviando || confirmando || (esAutor && tile.tipo === 'sin_resolver');
           const total = reporte.reacciones[tile.tipo];
           return (
             <button
