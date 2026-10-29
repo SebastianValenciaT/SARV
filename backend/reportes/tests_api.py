@@ -5,6 +5,7 @@ from unittest import mock
 from zoneinfo import ZoneInfo
 
 from django.core.management import CommandError, call_command
+from django.db.models import F
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -253,9 +254,35 @@ class SeedDemoTests(APITestCase):
     def test_es_idempotente(self):
         call_command('seed_demo', stdout=StringIO())
         call_command('seed_demo', stdout=StringIO())
-        self.assertEqual(Reporte.objects.count(), 8)
+        self.assertEqual(Reporte.objects.count(), 11)
         self.assertEqual(set(Reporte.objects.values_list('zona', flat=True)),
                          {'centro', 'norte', 'sur', 'oriente', 'poniente'})
+
+    @override_settings(DEBUG=True)
+    def test_crea_reportes_ajenos_para_el_usuario_demo(self):
+        call_command('seed_demo', stdout=StringIO())
+        demo = Usuario.objects.get(email='demo@sarv.example')
+        ajenos = Reporte.objects.exclude(usuario=demo)
+        self.assertEqual(ajenos.count(), 3)
+        self.assertTrue(ajenos.filter(estado='resuelto').exists())
+        self.assertEqual(Denuncia.objects.filter(usuario=demo).count(), 1)
+        self.assertEqual(Reaccion.objects.filter(usuario=demo).count(), 1)
+        # Nadie reacciona a su propio reporte.
+        self.assertFalse(Reaccion.objects.filter(usuario=F('reporte__usuario')).exists())
+
+    @override_settings(DEBUG=True)
+    def test_reset_no_borra_reportes_reales_con_el_mismo_titulo(self):
+        call_command('seed_demo', stdout=StringIO())
+        real = Usuario.objects.create_user('real@correo.mx', 'secreto1', nombre='Real')
+        tipo = TipoIncidente.objects.get(nombre='Otro')
+        Reporte.objects.create(
+            usuario=real, tipo=tipo, tipo_otro='Semáforo', titulo='Semáforo apagado',
+            descripcion='El semáforo no funciona desde ayer.', gravedad='leve',
+            latitud=f'{CENTRO_LAT:.6f}', longitud=f'{CENTRO_LNG:.6f}', fecha_incidente=timezone.now(),
+        )
+        call_command('seed_demo', '--reset', stdout=StringIO())
+        self.assertTrue(Reporte.objects.filter(usuario=real).exists())
+        self.assertEqual(Reporte.objects.count(), 12)
 
     def test_requiere_debug(self):
         with self.assertRaises(CommandError):
