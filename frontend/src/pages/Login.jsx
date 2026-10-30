@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar'; // Importación directa del Navbar del equipo
+import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
 export default function Login() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -37,8 +39,7 @@ export default function Login() {
 
       if (response.ok) {
         // Almacenamos los tokens de sesión en el navegador
-        localStorage.setItem('accessToken', data.access);
-        localStorage.setItem('refreshToken', data.refresh);
+        login(data.access, data.refresh);
         
         // Redirige al usuario a la página principal o ruta raíz
         navigate('/'); 
