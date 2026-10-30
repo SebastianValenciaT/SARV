@@ -18,7 +18,7 @@ const PASOS = [
   {
     icono: IconAlertTriangle,
     titulo: 'Selecciona el tipo de incidente',
-    descripcion: 'Elige entre accidente, inundación, tráfico o falla de infraestructura.',
+    descripcion: 'Elige entre accidente, inundación, bache o choque.',
   },
   {
     icono: IconMap2,
@@ -41,7 +41,7 @@ function Inicio()
 {
     return (
     <div className="inicio">
-      {/* Bienvenida + mapa */}
+      {/* Bienvenida y mapa */}
       <section className="inicio-bienvenida">
         <div className="inicio-bienvenida__texto">
           <h1>Reporta y consulta incidentes viales en Ciudad Juárez</h1>
