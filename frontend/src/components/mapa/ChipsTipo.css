@@ -1,0 +1,77 @@
+/*
+  ChipsTipo.css — Chips de filtro por tipo (vista Mapa y pantalla completa).
+  Mismo aspecto que tenían los chips del mapa (.mapa-chip), ahora en un componente.
+*/
+.chips-tipo {
+  flex: none;
+  display: flex;
+  gap: 6px;
+}
+
+/* escritorio, panel lateral: si no caben, pasan a la siguiente fila */
+.chips-tipo--envolver {
+  flex-wrap: wrap;
+}
+
+/* una sola fila con desplazamiento horizontal; el padding deja ver la sombra */
+.chips-tipo--desplazar {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  scrollbar-width: thin;
+}
+
+.chip-tipo {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 11px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+}
+
+.chip-tipo:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.chip-tipo-icon {
+  display: inline-flex;
+  color: var(--color-primary);
+}
+
+.chip-tipo.on {
+  padding-left: 6px;
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-surface);
+}
+
+.chip-tipo.on .chip-tipo-icon {
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.22);
+  color: var(--color-surface);
+}
+
+/* en pantallas angostas, aunque la variante sea "envolver", una fila con scroll */
+@media (max-width: 900px) {
+  .chips-tipo--envolver {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 2px 2px 6px;
+  }
+}
