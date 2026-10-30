@@ -6,6 +6,8 @@ import './ReportesHeader.css';
  * ReportesHeader: titulo, conteo de reportes y herramientas (filtros,
  * cambio Mapa/Lista y busqueda). Compartido por las vistas /mapa y /reportes.
  * La busqueda se envia al presionar Enter: onBuscar recibe el texto.
+ * El boton "Filtros" solo aparece si se recibe onToggleFiltros (la Lista lo usa;
+ * el Mapa no, porque filtra con sus chips).
  */
 function ReportesHeader({ total, etiqueta = 'reportes', filtrosActivos = 0, onToggleFiltros, onBuscar }) {
   const buscar = (event) => {
@@ -25,11 +27,13 @@ function ReportesHeader({ total, etiqueta = 'reportes', filtrosActivos = 0, onTo
       </div>
 
       <div className="reportes-head-tools">
-        <button type="button" className="reportes-tool-btn" onClick={onToggleFiltros}>
-          <Icon name="sliders" />
-          Filtros
-          {filtrosActivos > 0 && <span className="reportes-badge">{filtrosActivos}</span>}
-        </button>
+        {onToggleFiltros && (
+          <button type="button" className="reportes-tool-btn" onClick={onToggleFiltros}>
+            <Icon name="sliders" />
+            Filtros
+            {filtrosActivos > 0 && <span className="reportes-badge">{filtrosActivos}</span>}
+          </button>
+        )}
 
         <div className="reportes-toggle">
           <NavLink to="/mapa" className="reportes-toggle-item">
