@@ -18,11 +18,23 @@
 }
 
 .navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.navbar-brand-text {
   color: var(--color-surface);
   font-family: var(--font-heading);
   font-size: 1.4rem;
   font-weight: 700;
-  text-decoration: none;
+}
+
+.navbar-logo {
+  height: 65px;
+  width: auto;
+  object-fit: contain;
 }
 
 .navbar-right {

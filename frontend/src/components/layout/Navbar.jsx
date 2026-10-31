@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import logo from '../../assets/images/logo-sarv.png';
 import './Navbar.css';
 
 function Navbar() {
@@ -17,7 +18,8 @@ function Navbar() {
     <nav className="navbar">
       <div className="navbar-container">
         <Link to="/" className="navbar-brand">
-          SARV
+          <img src={logo} alt="Inicio SARV" className="navbar-logo" />
+          <span className="navbar-brand-text">SARV</span>
         </Link>
 
         <div className="navbar-right">
