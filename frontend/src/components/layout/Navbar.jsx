@@ -1,10 +1,17 @@
 import { useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import './Navbar.css';
 
 function Navbar() {
-  // simulado por el momento (cambiar useState a true para ver navbar usuario autenticado)
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
 
   return (
     <nav className="navbar">
@@ -25,7 +32,11 @@ function Navbar() {
                 Mapa
               </NavLink>
             </li>
-
+            <li>
+              <NavLink to="/reportes" className="navbar-link">
+              Reportes
+              </NavLink>
+            </li>
 
             {isAuthenticated && (
               <li>
@@ -40,7 +51,7 @@ function Navbar() {
                 <button
                   type="button"
                   className="navbar-link navbar-link-button"
-                  onClick={() => setIsAuthenticated(false)}
+                  onClick={handleLogout}
                 >
                   Cerrar sesión
                 </button>
