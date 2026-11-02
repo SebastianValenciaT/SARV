@@ -1,7 +1,8 @@
 import { useId, useState } from 'react';
 import Icon from '../common/Icon';
-import AlertaAccion from './AlertaAccion';
+import AlertaAccion, { AvisoSesion } from './AlertaAccion';
 import { esSoloLectura } from '../../constants/estados';
+import { useAuth } from '../../context/AuthContext';
 import { quitarReaccion, reaccionar } from '../../services/reportes';
 import { statusDe } from '../../utils/errores';
 
@@ -39,6 +40,8 @@ function ReaccionesCard({ reporte, onActualizado, onRefrescar }) {
   const [enviando, setEnviando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [error, setError] = useState(null);
+  const [pedirSesion, setPedirSesion] = useState(false);   // pulsó sin sesión
+  const { isAuthenticated } = useAuth();
   const notaId = useId();
 
   const soloLectura = esSoloLectura(reporte.estado);   // resuelto o expirado (RN-14)
@@ -59,6 +62,11 @@ function ReaccionesCard({ reporte, onActualizado, onRefrescar }) {
   }
 
   function pulsar(tipo) {
+    // Sin sesión no se llama a la API: se invita a iniciarla
+    if (!isAuthenticated) {
+      setPedirSesion(true);
+      return;
+    }
     if (esAutor) {
       if (tipo === 'resuelto') setConfirmando(true);
       return;
@@ -136,6 +144,7 @@ function ReaccionesCard({ reporte, onActualizado, onRefrescar }) {
 
       <div className="detalle-react-alert">
         <AlertaAccion error={error} onClose={() => setError(null)} />
+        {pedirSesion && !isAuthenticated && <AvisoSesion onClose={() => setPedirSesion(false)} />}
       </div>
     </div>
   );

@@ -1,8 +1,9 @@
 import { useId, useState } from 'react';
 import Alert from '../common/Alerts';
 import Icon from '../common/Icon';
-import AlertaAccion from './AlertaAccion';
+import AlertaAccion, { AvisoSesion } from './AlertaAccion';
 import { esSoloLectura } from '../../constants/estados';
+import { useAuth } from '../../context/AuthContext';
 import { denunciar } from '../../services/reportes';
 import { statusDe } from '../../utils/errores';
 import './DenunciaPanel.css';
@@ -36,6 +37,8 @@ function DenunciaPanel({ reporte, onActualizado, onRefrescar }) {
   const [error, setError] = useState(null);            // cualquier otro error de axios
   const [enviando, setEnviando] = useState(false);
   const [aviso, setAviso] = useState(null);
+  const [pedirSesion, setPedirSesion] = useState(false);   // pulsó sin sesión
+  const { isAuthenticated } = useAuth();
   const panelId = useId();
   const motivoId = useId();
   const ayudaId = useId();
@@ -107,7 +110,9 @@ function DenunciaPanel({ reporte, onActualizado, onRefrescar }) {
         onClick={() => {
           setAviso(null);
           setError(null);
-          setAbierto(true);
+          // Sin sesión no se abre el formulario: se invita a iniciarla
+          if (isAuthenticated) setAbierto(true);
+          else setPedirSesion(true);
         }}
       >
         <Icon name="alert" size={15} />
@@ -118,6 +123,7 @@ function DenunciaPanel({ reporte, onActualizado, onRefrescar }) {
 
       <Alert type="success" message={aviso} onClose={() => setAviso(null)} />
       <AlertaAccion error={error} onClose={() => setError(null)} />
+      {pedirSesion && !isAuthenticated && <AvisoSesion onClose={() => setPedirSesion(false)} />}
 
       {abierto && (
         <form id={panelId} className="card denuncia-panel" onSubmit={enviar} noValidate>
