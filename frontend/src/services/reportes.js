@@ -45,7 +45,7 @@ export async function getReportesMapa(params, config) {
   header axios convertiría el FormData a JSON (los archivos se perderían).
   Al indicar multipart, axios deja el FormData intacto y el navegador escribe
   el header real con su "boundary" (el separador entre campos).
-  TODO(auth): el token lo agregará el cliente de api.js cuando exista useAuth().
+  Requiere sesión: el token lo agrega api.js.
 */
 export async function crearReporte(formData, config) {
   const { data } = await api.post('/reportes/', formData, {
@@ -59,8 +59,7 @@ export async function crearReporte(formData, config) {
   Reacciones y denuncias. Las tres responden con el detalle actualizado
   (mismo JSON que getReporte): la página lo usa tal cual para refrescar
   conteos, mi_reaccion, ya_denuncie y estado.
-  TODO(auth): requieren sesión; hasta que api.js mande el token, el servidor
-  responde 403 a todos.
+  Requieren sesión (el token lo agrega api.js); sin ella el servidor responde 401.
 */
 
 // Crea o cambia mi reacción. tipo: 'sin_resolver' | 'resuelto'
