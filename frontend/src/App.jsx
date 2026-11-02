@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Registro from './pages/Registro';
 import MisReportes from './pages/MisReportes';
 import Inicio from './pages/Inicio';
+import RutaProtegida from './components/auth/RutaProtegida';
 
 
 
@@ -19,11 +20,11 @@ function App() {
       <Route path="/mapa" element={<Layout><MapaReportes /></Layout>} />
       <Route path="/reportes" element={<Layout><ListaReportes /></Layout>} />
       <Route path="/reportes/:id" element={<Layout><DetalleReporte /></Layout>} />
-      <Route path="/crear-reporte" element={<Layout><CrearReporte /></Layout>} />
+      <Route path="/crear-reporte" element={<Layout><RutaProtegida><CrearReporte /></RutaProtegida></Layout>} />
       {/* Login y Registro dibujan su propio Navbar, por eso van sin Layout */}
       <Route path="/login" element={<Login />} />
       <Route path="/registro" element={<Registro />} />
-      <Route path="/mis-reportes" element={<Layout><MisReportes /></Layout>} />
+      <Route path="/mis-reportes" element={<Layout><RutaProtegida><MisReportes /></RutaProtegida></Layout>} />
     </Routes>
   );
 }

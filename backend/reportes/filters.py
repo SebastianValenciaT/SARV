@@ -12,6 +12,8 @@ from rest_framework import serializers
 from .models import Reporte
 
 FECHAS = ['hoy', '7d', '30d']
+# `expirado` no es un valor guardado: se calcula con la duración del tipo (models.py).
+ESTADOS_FILTRO = [*Reporte.Estado.values, Reporte.ESTADO_EXPIRADO]
 
 
 class FiltrosReporteSerializer(serializers.Serializer):
@@ -19,7 +21,7 @@ class FiltrosReporteSerializer(serializers.Serializer):
     tipo = serializers.ListField(child=serializers.IntegerField(min_value=1), required=False)
     zona = serializers.ChoiceField(choices=Reporte.Zona.choices, required=False, allow_blank=True)
     fecha = serializers.ChoiceField(choices=FECHAS, required=False, allow_blank=True)
-    estado = serializers.ChoiceField(choices=Reporte.Estado.choices, required=False, allow_blank=True)
+    estado = serializers.ChoiceField(choices=ESTADOS_FILTRO, required=False, allow_blank=True)
     q = serializers.CharField(required=False, allow_blank=True, max_length=100)
 
 
@@ -34,17 +36,27 @@ def inicio_de_fecha(fecha):
 
 
 def filtrar_reportes(queryset, query_params):
-    """Aplica al queryset los filtros válidos que vengan en la URL."""
+    """Aplica al queryset los filtros válidos que vengan en la URL.
+
+    Expiración: por defecto se ocultan los expirados (los resueltos nunca, gana
+    "resuelto"). `estado=expirado` devuelve solo los expirados y `estado=sin_resolver`
+    solo los vigentes sin resolver.
+    """
     filtros = FiltrosReporteSerializer(data=query_params)
     filtros.is_valid(raise_exception=True)
     datos = filtros.validated_data
 
+    ahora = timezone.now()   # un solo "ahora" para toda la consulta
+    if datos.get('estado') == Reporte.ESTADO_EXPIRADO:
+        queryset = queryset.expirados(ahora)
+    else:
+        queryset = queryset.no_expirados(ahora)
+        if datos.get('estado'):
+            queryset = queryset.filter(estado=datos['estado'])
     if datos.get('tipo'):
         queryset = queryset.filter(tipo_id__in=datos['tipo'])
     if datos.get('zona'):
         queryset = queryset.filter(zona=datos['zona'])
-    if datos.get('estado'):
-        queryset = queryset.filter(estado=datos['estado'])
     if datos.get('fecha'):
         queryset = queryset.filter(fecha_incidente__gte=inicio_de_fecha(datos['fecha']))
     if datos.get('q'):

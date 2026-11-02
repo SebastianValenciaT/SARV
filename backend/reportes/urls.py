@@ -8,6 +8,9 @@ urlpatterns = [
     path('reportes/', views.ReporteListCreateView.as_view(), name='reporte-lista'),
     # <int:pk> captura el id de la URL y se lo pasa a la vista como `pk`.
     path('reportes/<int:pk>/', views.ReporteDetailView.as_view(), name='reporte-detalle'),
+    # PUT crea o cambia mi reacción, DELETE la quita (requieren sesión)
+    path('reportes/<int:pk>/reaccion/', views.ReaccionView.as_view(), name='reporte-reaccion'),
+    path('reportes/<int:pk>/denuncias/', views.DenunciaView.as_view(), name='reporte-denuncias'),
     path('mapa/reportes/', views.MapaReportesView.as_view(), name='mapa-reportes'),
     path('imagenes/<int:pk>/', views.imagen_view, name='imagen'),
     path('geo/buscar/', views.GeoBuscarView.as_view(), name='geo-buscar'),

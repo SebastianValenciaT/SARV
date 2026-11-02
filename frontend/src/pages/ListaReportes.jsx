@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Alert from '../components/common/Alerts';
+import EstadoBadge from '../components/common/EstadoBadge';
 import Icon from '../components/common/Icon';
 import MiniMap from '../components/common/MiniMap';
 import ReportesHeader from '../components/reportes/ReportesHeader';
@@ -198,19 +199,15 @@ function ListaReportes() {
                   <span className="lista-feat-count">
                     <b>{destacado.confirmaciones}</b> confirman
                   </span>
+                  {/* Solo los estados que no son el normal (por defecto no llegan expirados) */}
+                  {destacado.estado !== 'sin_resolver' && <EstadoBadge estado={destacado.estado} />}
                   <span className="row lista-feat-actions">
-                    {/* TODO(auth): habilitar cuando exista inicio de sesión (reaccionar requiere login) */}
-                    <button
-                      type="button"
-                      className="btn-outline lista-feat-react"
-                      disabled
-                      title="Inicia sesión para reaccionar"
+                    {/* Reaccionar vive en el detalle */}
+                    <Link
+                      to={`/reportes/${destacado.id}`}
+                      state={{ from: '/reportes' }}
+                      className="btn-primary"
                     >
-                      <Icon name="like" />
-                      Reaccionar
-                      <Icon name="down" size={14} />
-                    </button>
-                    <Link to={`/reportes/${destacado.id}`} className="btn-primary">
                       Ver detalle <Icon name="arrow-r" />
                     </Link>
                   </span>
@@ -229,7 +226,12 @@ function ListaReportes() {
           {/* cuadricula */}
           <div className="lista-grid">
             {resto.map((reporte) => (
-              <Link key={reporte.id} to={`/reportes/${reporte.id}`} className="card lista-rc">
+              <Link
+                key={reporte.id}
+                to={`/reportes/${reporte.id}`}
+                state={{ from: '/reportes' }}
+                className="card lista-rc"
+              >
                 <div className="lista-rc-head">
                   <span className="lista-rc-icon">
                     <Icon name={iconoPorId(tipos, reporte.tipo)} />
@@ -243,6 +245,9 @@ function ListaReportes() {
                 <div className="lista-rc-date">
                   <Icon name="cal" />
                   {formatCuando(reporte.fecha_incidente)}
+                  {reporte.estado !== 'sin_resolver' && (
+                    <EstadoBadge estado={reporte.estado} className="lista-rc-estado" />
+                  )}
                 </div>
                 <div className="lista-rc-count">
                   Confirmaciones<b>{reporte.confirmaciones}</b>

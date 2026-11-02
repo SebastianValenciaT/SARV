@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Alert from '../components/common/Alerts';
 import Icon from '../components/common/Icon';
 import UbicacionPicker from '../components/ubicacion/UbicacionPicker';
@@ -37,6 +37,7 @@ function FieldError({ errores, campo }) {
  */
 function CrearReporte() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: tipos, error: errorTipos } = useTipos();
 
   // La fecha máxima se calcula una vez al abrir la página (el servidor revalida al enviar)
@@ -164,9 +165,11 @@ function CrearReporte() {
         setErrorGeneral(
           sinLugar.length ? primerMensaje({ [sinLugar[0]]: data[sinLugar[0]] }) : 'Revisa los campos marcados.',
         );
-      } else if (status === 401 || status === 403) {
-        // TODO(auth): redirigir a /login y adjuntar el token cuando exista useAuth()
-        setErrorGeneral('Debes iniciar sesión para publicar un reporte.');
+      } else if (status === 401) {
+        // La sesión venció y api.js no pudo renovarla: a /login, que regresa aquí al entrar
+        navigate('/login', { state: { from: location } });
+      } else if (status === 403) {
+        setErrorGeneral('No tienes permiso para publicar reportes.');
       } else if (status === 429) {
         setErrorGeneral('Has enviado demasiados reportes, intenta más tarde.');
       } else {
@@ -213,6 +216,12 @@ function CrearReporte() {
               ))}
             </div>
             <FieldError errores={errores} campo="tipo" />
+            {/* duracion_horas viene de /api/tipos/ (null = sin límite: no se avisa nada) */}
+            {tipoElegido?.duracion_horas > 0 && (
+              <p className="crear-ayuda">
+                Este tipo de reporte se mostrará durante {tipoElegido.duracion_horas} horas.
+              </p>
+            )}
 
             {esOtro && (
               <label className="crear-field">

@@ -36,7 +36,8 @@ def url_imagen(request, imagen_id):
 class TipoIncidenteSerializer(serializers.ModelSerializer):
     class Meta:
         model = TipoIncidente
-        fields = ['id', 'nombre']
+        # duracion_horas: el formulario avisa cuánto se mostrará el reporte (null = sin límite)
+        fields = ['id', 'nombre', 'duracion_horas']
 
 
 class ReporteListSerializer(serializers.ModelSerializer):
@@ -46,13 +47,16 @@ class ReporteListSerializer(serializers.ModelSerializer):
     confirmaciones = serializers.IntegerField(read_only=True)    # annotate
     total_imagenes = serializers.IntegerField(read_only=True)    # annotate
     imagen_principal = serializers.SerializerMethodField()
+    # Estado efectivo: sin_resolver, resuelto o expirado (el expirado se calcula, no se guarda).
+    estado = serializers.CharField(source='estado_efectivo', read_only=True)
+    expira_en = serializers.DateTimeField(read_only=True)        # propiedad; null = sin límite
 
     class Meta:
         model = Reporte
         fields = [
             'id', 'titulo', 'descripcion', 'tipo', 'tipo_etiqueta', 'direccion', 'zona', 'estado',
-            'latitud', 'longitud', 'fecha_incidente', 'creado_en', 'confirmaciones', 'total_imagenes',
-            'imagen_principal',
+            'latitud', 'longitud', 'fecha_incidente', 'creado_en', 'expira_en', 'confirmaciones',
+            'total_imagenes', 'imagen_principal',
         ]
 
     def get_imagen_principal(self, obj):
@@ -219,6 +223,25 @@ class ReporteCreateSerializer(serializers.ModelSerializer):
             for contenido, tipo_mime in imagenes:
                 Imagen.objects.create(reporte=reporte, contenido=contenido, tipo_mime=tipo_mime)
         return reporte
+
+# ---------- reacciones y denuncias (solo validan el body) ----------
+
+class ReaccionSerializer(serializers.Serializer):
+    """Body de PUT /api/reportes/{id}/reaccion/: {tipo}."""
+
+    tipo = serializers.ChoiceField(choices=Reaccion.Tipo.choices)
+
+
+class DenunciaSerializer(serializers.Serializer):
+    """Body de POST /api/reportes/{id}/denuncias/: {motivo}.
+
+    CharField quita los espacios del inicio y del final ANTES de medir la longitud,
+    así "   corto   " cuenta 5 caracteres y un motivo de solo espacios queda vacío
+    (DRF lo rechaza con "Este campo no puede estar en blanco").
+    """
+
+    motivo = serializers.CharField(min_length=10, max_length=300)
+
 
 # ---------- geocodificación (solo validan los query params) ----------
 

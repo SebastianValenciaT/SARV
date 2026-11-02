@@ -10,8 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 from decouple import config, Csv
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,6 +26,14 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-env')
 DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
+# Fuera de desarrollo (DEBUG=False) no se arranca con una clave conocida: con ella
+# cualquiera podría firmar tokens JWT válidos. Con DEBUG=True no estorba.
+CLAVES_INSEGURAS = {'django-insecure-change-me-in-env', 'cambia-esto-por-una-clave-larga-y-aleatoria'}
+if not DEBUG and (SECRET_KEY in CLAVES_INSEGURAS or SECRET_KEY.startswith('django-insecure')):
+    raise ImproperlyConfigured(
+        'SECRET_KEY insegura con DEBUG=False. Define en .env una clave aleatoria de al menos 32 caracteres.'
+    )
+
 
 # Application definition
 
@@ -35,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt',  # solo para sus mensajes en español; no crea tablas
     'corsheaders',
     'core',
     'usuarios',
@@ -155,6 +166,10 @@ NOMINATIM_BASE_URL = config('NOMINATIM_BASE_URL', default='https://nominatim.ope
 NOMINATIM_USER_AGENT = config('NOMINATIM_USER_AGENT', default='SARV-dev/0.1 (contacto no configurado)')
 
 REST_FRAMEWORK = {
+    # Solo JWT (encabezado "Authorization: Bearer <access>"). Sin token, lo protegido
+    # responde 401. Ya no se acepta Basic ni la sesión de Django en la API
+    # (el admin sigue usando su propia sesión, no pasa por DRF).
+    'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework_simplejwt.authentication.JWTAuthentication'],
     # Por defecto: leer es público, escribir requiere sesión. Así los endpoints de
     # escritura nacen protegidos; los de lectura pública declaran AllowAny a mano.
     'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
@@ -164,5 +179,22 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'geo': '30/min',
         'reportes_crear': '20/hour',   # solo POST /api/reportes/ (cuenta todos los intentos)
+        'reacciones': '60/min',        # PUT y DELETE de reportes/{id}/reaccion/ (juntos)
+        'denuncias': '10/hour',        # POST reportes/{id}/denuncias/
+        # Login y registro: por IP (son anónimos). Generosos porque en una demostración
+        # muchas personas comparten la IP de la misma red.
+        'auth_login': '20/min',        # cuenta todos los intentos, también los correctos
+        'auth_registro': '50/hour',
     },
+}
+
+# Tokens JWT (simplejwt). El access dura poco para limitar el daño si se filtra; el
+# frontend lo renueva solo con el refresh, así que el usuario no lo nota.
+# Sin rotación del refresh: no hace falta la lista negra (que agregaría tablas).
+# Consecuencia: cerrar sesión solo borra los tokens del navegador.
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': False,
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
