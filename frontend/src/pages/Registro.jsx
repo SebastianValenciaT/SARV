@@ -1,7 +1,27 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar';
+import api from '../services/api';
 import './Registro.css';
+
+// Nombre legible de cada campo que puede traer errores el servidor
+const CAMPOS = {
+  email: 'Correo',
+  password: 'Contraseña',
+  nombre: 'Nombre',
+  apellido: 'Apellido',
+  aceptaPrivacidad: 'Aviso de privacidad',
+};
+const MIN_PASSWORD = 8; // mismo mínimo que el servidor (AUTH_PASSWORD_VALIDATORS)
+
+// { email: ['Ya existe…'], password: ['…', '…'] } -> "Correo: Ya existe… Contraseña: … …"
+function erroresDelServidor(data) {
+  const partes = Object.entries(data ?? {}).map(([campo, mensajes]) => {
+    const texto = [].concat(mensajes).join(' ');
+    return CAMPOS[campo] ? `${CAMPOS[campo]}: ${texto}` : texto;
+  });
+  return partes.join(' ') || 'Ocurrió un error en el registro. Verifica tus datos.';
+}
 
 export default function Registro() {
   const [formData, setFormData] = useState({
@@ -34,8 +54,8 @@ export default function Registro() {
       setError('Por favor, completa todos los campos obligatorios.');
       return;
     }
-    if (password.length < 6) {
-      setError('La contraseña debe tener un mínimo de 6 caracteres.');
+    if (password.length < MIN_PASSWORD) {
+      setError(`La contraseña debe tener un mínimo de ${MIN_PASSWORD} caracteres.`);
       return;
     }
     if (password !== confirmPassword) {
@@ -47,40 +67,32 @@ export default function Registro() {
       return;
     }
 
-    // Petición al endpoint del backend
+    // Petición al endpoint del backend (api.js ya conoce la dirección del servidor)
     try {
-      const response = await fetch('http://localhost:8000/api/registro/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Mapeamos los datos del estado a lo que espera serializers.py
-        body: JSON.stringify({
-          nombre: nombre,
-          apellido: apellido,
-          email: correo, // El backend espera 'email', pero tu estado se llama 'correo'
-          password: password,
-          aceptaPrivacidad: aceptaPrivacidad
-        })
+      // Mapeamos los datos del estado a lo que espera serializers.py
+      await api.post('/registro/', {
+        nombre: nombre,
+        apellido: apellido,
+        email: correo, // El backend espera 'email', pero tu estado se llama 'correo'
+        password: password,
+        aceptaPrivacidad: aceptaPrivacidad
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // Redirige al login y le pasa un estado para mostrar el banner azul (HU-027)
-        navigate('/login', { state: { message: '¡Cuenta creada exitosamente!' } });
-      } else {
-        // Muestra los errores que devuelva el servidor
-        console.error('Error del servidor:', data);
-        if (data.email) {
-          setError('El correo electrónico ya está en uso'); // Validado según caso de uso UC-03
-        } else {
-          setError('Ocurrió un error en el registro. Verifica tus datos.');
-        }
-      }
+      // Redirige al login y le pasa un estado para mostrar el banner azul (HU-027)
+      navigate('/login', { state: { message: '¡Cuenta creada exitosamente!' } });
     } catch (err) {
-      console.error('Error de red:', err);
-      setError('Error al conectar con el servidor. Verifica que el backend esté encendido.');
+      const status = err.response?.status;
+      if (status === 400) {
+        // Muestra los errores por campo que devuelva el servidor, ya en español
+        // (correo ya registrado, contraseña débil, privacidad...)
+        setError(erroresDelServidor(err.response.data));
+      } else if (status === 429) {
+        setError('Se hicieron demasiados registros desde esta red. Intenta de nuevo más tarde.');
+      } else if (!err.response) {
+        setError('Error al conectar con el servidor. Verifica que el backend esté encendido.');
+      } else {
+        setError('Ocurrió un error en el registro. Verifica tus datos.');
+      }
     }
   };
 
@@ -134,7 +146,7 @@ export default function Registro() {
               </div>
 
               <div className="form-group">
-                <label>Contraseña (Mínimo 6 caracteres) <span className="asterisk">*</span></label>
+                <label>Contraseña (Mínimo {MIN_PASSWORD} caracteres) <span className="asterisk">*</span></label>
                 <input
                   type="password"
                   name="password"
