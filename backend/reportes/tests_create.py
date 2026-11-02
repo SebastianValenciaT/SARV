@@ -1,6 +1,6 @@
 """Pruebas de POST /api/reportes/ (creación con imágenes).
 
-Aún no hay login: force_authenticate simula un usuario con sesión.
+force_authenticate simula un usuario con sesión (el flujo con token real está en usuarios/tests.py).
 Las imágenes se generan en memoria con Pillow.
 """
 from datetime import timedelta
@@ -152,7 +152,7 @@ class PermisosTests(BaseCreacion):
     def test_anonimo_es_rechazado(self):
         self.client.force_authenticate(None)
         response = self.post()
-        self.assertIn(response.status_code, (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(Reporte.objects.count(), 0)
 
     def test_el_listado_sigue_siendo_publico(self):

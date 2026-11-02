@@ -1,7 +1,8 @@
 """Pruebas de reacciones (PUT/DELETE reportes/{id}/reaccion/) y denuncias
 (POST reportes/{id}/denuncias/).
 
-Aún no hay JWT: force_authenticate simula un usuario con sesión.
+force_authenticate simula un usuario con sesión (la prueba con un token JWT real
+está en usuarios/tests.py).
 """
 from datetime import timedelta
 from unittest import mock
@@ -124,9 +125,8 @@ class ReaccionTests(BaseInteraccion):
 
     def test_anonimo_rechazado(self):
         self.client.force_authenticate(None)
-        # Hoy 403 (autenticación por sesión de DRF); con JWT será 401.
-        self.assertIn(self.reaccionar('sin_resolver').status_code, (401, 403))
-        self.assertIn(self.quitar().status_code, (401, 403))
+        self.assertEqual(self.reaccionar('sin_resolver').status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(self.quitar().status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(Reaccion.objects.count(), 0)
 
     def test_reporte_inexistente_404(self):
@@ -309,7 +309,7 @@ class DenunciaTests(BaseInteraccion):
 
     def test_anonimo_rechazado(self):
         self.client.force_authenticate(None)
-        self.assertIn(self.denunciar().status_code, (401, 403))
+        self.assertEqual(self.denunciar().status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(Denuncia.objects.count(), 0)
 
     def test_reporte_inexistente_404(self):
