@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import './Navbar.css';
