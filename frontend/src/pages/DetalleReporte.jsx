@@ -246,7 +246,7 @@ function DetalleReporte() {
             onRefrescar={refrescar}
           />
 
-          {/* Solo lo ve el autor (TODO(auth): es_autor llega en false hasta que api.js mande el token) */}
+          {/* Solo lo ve el autor (es_autor lo calcula el servidor con el token) */}
           {reporte.es_autor && (
             <div className="card detalle-author">
               <div className="detalle-author-name">{reporte.seguimiento[0].autor}</div>
