@@ -288,14 +288,15 @@ class DenunciaView(AccionReporteView):
 
 # ---------- geocodificación (Nominatim, siempre a través del backend) ----------
 
-# TODO(auth): cambiar a IsAuthenticated cuando exista el login (el contrato pide sesión).
-GEO_PERMISSION_CLASSES = [AllowAny]
+# Geocodificar requiere sesión (solo se usa al crear un reporte) y así no se gasta la
+# cuota de Nominatim en visitantes anónimos.
+GEO_PERMISSION_CLASSES = [IsAuthenticated]
 
 MENSAJE_NO_DISPONIBLE = 'El servicio de direcciones no está disponible. Intenta de nuevo en unos minutos.'
 
 
 class GeoBaseView(APIView):
-    """Configuración común: permiso temporal y límite de peticiones (scope 'geo' en settings)."""
+    """Configuración común: requiere sesión y límite de peticiones (scope 'geo' en settings)."""
 
     permission_classes = GEO_PERMISSION_CLASSES
     throttle_classes = [ScopedRateThrottle]
