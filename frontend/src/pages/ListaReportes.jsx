@@ -202,17 +202,7 @@ function ListaReportes() {
                   {/* Solo los estados que no son el normal (por defecto no llegan expirados) */}
                   {destacado.estado !== 'sin_resolver' && <EstadoBadge estado={destacado.estado} />}
                   <span className="row lista-feat-actions">
-                    {/* TODO(auth): habilitar cuando exista inicio de sesión (reaccionar requiere login) */}
-                    <button
-                      type="button"
-                      className="btn-outline lista-feat-react"
-                      disabled
-                      title="Inicia sesión para reaccionar"
-                    >
-                      <Icon name="like" />
-                      Reaccionar
-                      <Icon name="down" size={14} />
-                    </button>
+                    {/* Reaccionar vive en el detalle */}
                     <Link to={`/reportes/${destacado.id}`} className="btn-primary">
                       Ver detalle <Icon name="arrow-r" />
                     </Link>
