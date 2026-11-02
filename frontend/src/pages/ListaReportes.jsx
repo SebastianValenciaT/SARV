@@ -203,7 +203,11 @@ function ListaReportes() {
                   {destacado.estado !== 'sin_resolver' && <EstadoBadge estado={destacado.estado} />}
                   <span className="row lista-feat-actions">
                     {/* Reaccionar vive en el detalle */}
-                    <Link to={`/reportes/${destacado.id}`} className="btn-primary">
+                    <Link
+                      to={`/reportes/${destacado.id}`}
+                      state={{ from: '/reportes' }}
+                      className="btn-primary"
+                    >
                       Ver detalle <Icon name="arrow-r" />
                     </Link>
                   </span>
@@ -222,7 +226,12 @@ function ListaReportes() {
           {/* cuadricula */}
           <div className="lista-grid">
             {resto.map((reporte) => (
-              <Link key={reporte.id} to={`/reportes/${reporte.id}`} className="card lista-rc">
+              <Link
+                key={reporte.id}
+                to={`/reportes/${reporte.id}`}
+                state={{ from: '/reportes' }}
+                className="card lista-rc"
+              >
                 <div className="lista-rc-head">
                   <span className="lista-rc-icon">
                     <Icon name={iconoPorId(tipos, reporte.tipo)} />

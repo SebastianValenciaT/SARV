@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import Alert from '../components/common/Alerts';
 import EstadoBadge from '../components/common/EstadoBadge';
 import Icon from '../components/common/Icon';
@@ -31,9 +31,9 @@ function textoFase(fase) {
   return fecha;
 }
 
-function VolverLink() {
+function VolverLink({ destino }) {
   return (
-    <Link to="/reportes" className="row detalle-back">
+    <Link to={destino} className="row detalle-back">
       <span className="icon-btn detalle-back-btn">
         <Icon name="arrow-l" />
       </span>
@@ -48,6 +48,8 @@ function VolverLink() {
  */
 function DetalleReporte() {
   const { id } = useParams();
+  const location = useLocation();
+  const destino = location.state?.from ?? '/reportes';
   // setData reemplaza el reporte con el detalle que responde el servidor tras
   // reaccionar o denunciar: un solo origen de verdad, sin actualizaciones optimistas.
   const { data: reporte, loading, error, setData } = useReporte(id);
@@ -67,7 +69,7 @@ function DetalleReporte() {
   if (loading) {
     return (
       <div className="detalle-page">
-        <VolverLink />
+        <VolverLink destino={destino} />
         <p className="detalle-desc">Cargando reporte…</p>
       </div>
     );
@@ -78,7 +80,7 @@ function DetalleReporte() {
     const noExiste = error.response?.status === 404;
     return (
       <div className="detalle-page">
-        <VolverLink />
+        <VolverLink destino={destino} />
         {noExiste ? (
           <p className="detalle-desc">El reporte que buscas no existe o fue eliminado.</p>
         ) : (
@@ -99,7 +101,7 @@ function DetalleReporte() {
     <div className="detalle-page">
       {/* barra superior */}
       <div className="row detalle-topbar">
-        <VolverLink />
+        <VolverLink destino={destino} />
         <div className="row detalle-date">
           <Icon name="cal" size={14} />
           {formatFechaHora(reporte.fecha_incidente)}

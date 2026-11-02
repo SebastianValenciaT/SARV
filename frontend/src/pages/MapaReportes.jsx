@@ -169,7 +169,11 @@ function MapaReportes() {
                 <button type="button" className="icon-btn mapa-sheet-share" aria-label="Compartir">
                   <Icon name="share" />
                 </button>
-                <Link to={`/reportes/${selected.id}`} className="btn-primary">
+                <Link
+                  to={`/reportes/${selected.id}`}
+                  state={{ from: '/mapa' }}
+                  className="btn-primary"
+                >
                   Ver detalle <Icon name="arrow-r" />
                 </Link>
               </div>
