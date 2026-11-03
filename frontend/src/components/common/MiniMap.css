@@ -1,0 +1,20 @@
+/*
+  MiniMap.css — Contenedor del mapa pequeño. La altura la define quien
+  lo usa (por ejemplo .detalle-location-map o .lista-feat-map).
+*/
+
+.minimap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+/* Mapa fijo: el cursor no debe sugerir que se puede arrastrar */
+.minimap .leaflet-container {
+  cursor: default;
+}
+
+.minimap .leaflet-control-attribution {
+  font-size: 8px;
+  line-height: 1.4;
+}

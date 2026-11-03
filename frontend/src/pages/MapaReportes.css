@@ -1,0 +1,332 @@
+/*
+  MapaReportes.css — Vista F: mapa con lista lateral de reportes.
+  Las piezas base (.card, .thumb, .btn-primary...) viven en styles/ui.css.
+*/
+
+.mapa-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.mapa-body {
+  display: flex;
+  gap: 24px;
+  height: 720px;
+  min-height: 0;
+}
+
+/* ---------- columna izquierda ---------- */
+.mapa-sidebar {
+  flex: none;
+  width: 392px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+
+/* los chips de tipo viven en components/mapa/ChipsTipo.css */
+
+.mapa-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.mapa-rep {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  text-align: left;
+}
+
+.mapa-rep.on {
+  border-color: var(--color-primary);
+}
+
+.mapa-rep .thumb {
+  width: 70px;
+  height: 70px;
+}
+
+.mapa-rep-title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.mapa-rep-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.mapa-rep-meta .icon {
+  width: 13px;
+  height: 13px;
+}
+
+.mapa-empty {
+  margin: 8px 4px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* ---------- mapa ---------- */
+/*
+  Variables de la barra superior del mapa (botón de pantalla completa y, en ese
+  modo, los chips). Los controles de Leaflet de la derecha (atribución y zoom)
+  bajan a --mapa-controles-top para no quedar debajo del botón. Un solo lugar
+  para la medida: si cambia la barra, cambia todo junto.
+*/
+.mapa-map {
+  --mapa-barra-top: 12px;
+  --mapa-barra-alto: 40px;
+  --mapa-controles-top: calc(var(--mapa-barra-top) + var(--mapa-barra-alto) + 4px);
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #edeef0;
+  box-shadow: var(--shadow-card);
+}
+
+/* Leaflet pone sus controles con top: 0 (más un margen de 10px); los bajamos */
+.mapa-map .leaflet-top.leaflet-right {
+  top: var(--mapa-controles-top);
+}
+
+/* Tarjetas sobre el mapa: z-index 1 para quedar encima de Leaflet */
+.mapa-barra {
+  position: absolute;
+  z-index: 1;
+  top: var(--mapa-barra-top);
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 8px;
+  /* la barra deja pasar los clics al mapa; solo sus hijos los reciben */
+  pointer-events: none;
+}
+
+.mapa-barra > * {
+  pointer-events: auto;
+}
+
+.mapa-barra-chips {
+  flex: 1;
+  min-width: 0;
+}
+
+.mapa-full-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: var(--mapa-barra-alto);
+  height: var(--mapa-barra-alto);
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: var(--shadow-float);
+  cursor: pointer;
+}
+
+.mapa-full-btn:hover {
+  background: var(--color-gray-light);
+}
+
+.mapa-full-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.mapa-full-btn .icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* aviso cuando el filtro no deja ningún pin (centrado: el mapa está vacío) */
+.mapa-vacio {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  max-width: calc(100% - 48px);
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-float);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.mapa-sort {
+  position: absolute;
+  z-index: 1;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-float);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.mapa-sort b {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.mapa-sheet {
+  position: absolute;
+  z-index: 1;
+  left: 18px;
+  right: 18px;
+  bottom: 16px;
+  padding: 16px 20px 18px;
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 6px 24px rgba(27, 34, 54, 0.14);
+}
+
+.mapa-sheet-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mapa-sheet-tab {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.mapa-sheet-spacer {
+  flex: 1;
+}
+
+.mapa-sheet-share {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.mapa-sheet-cols {
+  display: flex;
+  gap: 80px;
+  padding-top: 14px;
+}
+
+.mapa-sheet-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.mapa-sheet-type-icon {
+  color: var(--color-primary);
+}
+
+/* ---------- pantallas angostas: lista arriba, mapa abajo ---------- */
+@media (max-width: 900px) {
+  .mapa-body {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .mapa-sidebar {
+    width: 100%;
+    max-height: 340px;
+  }
+
+  .mapa-map {
+    flex: none;
+    height: 520px;
+  }
+
+  .mapa-sheet {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    padding: 12px 14px;
+  }
+
+  .mapa-sheet-cols {
+    gap: 24px;
+  }
+}
+
+/* ---------- pantalla completa (CSS, no requestFullscreen) ----------
+   Va al final y con dos clases para ganar a las reglas de pantallas angostas.
+   100dvh (no 100vh): en el celular descuenta las barras del navegador.
+   env(safe-area-inset-*): muescas y barra de inicio del iPhone (0 si no hay). */
+.mapa-map.mapa-map--full {
+  --mapa-barra-top: calc(12px + env(safe-area-inset-top));
+  position: fixed;
+  inset: 0;
+  z-index: 100; /* Navbar y Footer no están posicionados: basta para quedar encima */
+  width: auto;
+  height: 100vh;
+  height: 100dvh;
+  border-radius: 0;
+}
+
+.mapa-map--full .mapa-barra {
+  left: calc(12px + env(safe-area-inset-left));
+  right: calc(12px + env(safe-area-inset-right));
+}
+
+.mapa-map--full .leaflet-right {
+  right: env(safe-area-inset-right);
+}
+
+/* "Ordenar por" aún no tiene función: en pantalla completa deja el espacio a los chips */
+.mapa-map--full .mapa-sort {
+  display: none;
+}
+
+.mapa-map--full .mapa-sheet {
+  left: calc(18px + env(safe-area-inset-left));
+  right: calc(18px + env(safe-area-inset-right));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+}
