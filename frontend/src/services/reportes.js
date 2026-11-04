@@ -55,6 +55,16 @@ export async function crearReporte(formData, config) {
   return data;
 }
 
+export async function obtenerReporte(id) {
+  const { data } = await api.get(`/reportes/${id}/`);
+  return data;
+}
+
+export async function actualizarReporte(id, formData) {
+  const { data } = await api.patch(`/reportes/${id}/`, formData);
+  return data;
+}
+
 /*
   Reacciones y denuncias. Las tres responden con el detalle actualizado
   (mismo JSON que getReporte): la página lo usa tal cual para refrescar

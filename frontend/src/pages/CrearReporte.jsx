@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Alert from '../components/common/Alerts';
 import Icon from '../components/common/Icon';
 import UbicacionPicker from '../components/ubicacion/UbicacionPicker';
 import { iconoPorId, iconoTipo } from '../constants/tipos';
 import { useTipos } from '../hooks/useTipos';
-import { crearReporte } from '../services/reportes';
+import { actualizarReporte, crearReporte, obtenerReporte } from '../services/reportes';
 import { primerMensaje, statusDe } from '../utils/errores';
 import { fechaLocalParaInput } from '../utils/fechas';
 import { MAX_FOTOS, prepararFoto } from '../utils/imagenes';
@@ -22,7 +22,7 @@ const MARGEN_FUTURO_MS = 5 * 60 * 1000; // mismo margen que el servidor (reloj d
 
 // Campos cuyo error 400 se muestra junto al campo; los demás (non_field_errors...) van en el Alert
 const CAMPOS_CON_LUGAR = ['tipo', 'tipo_otro', 'titulo', 'descripcion', 'gravedad', 'fecha_incidente',
-  'latitud', 'longitud', 'direccion', 'imagenes'];
+  'latitud', 'longitud', 'direccion', 'imagenes', 'imagenes_eliminar'];
 
 function FieldError({ errores, campo }) {
   const mensajes = errores[campo];
@@ -31,13 +31,18 @@ function FieldError({ errores, campo }) {
 }
 
 /**
- * Página "Crear reporte" (/crear-reporte).
- * Arma un FormData con los campos, las fotos (clave `imagenes` repetida)
- * y la ubicación del UbicacionPicker, y lo envía a POST /api/reportes/.
+ * Formulario de reporte con dos modos:
+ * - Crear  (/crear-reporte): POST /api/reportes/.
+ * - Editar (/reportes/:id/editar): precarga el reporte y manda PATCH /api/reportes/{id}/
+ *   (RF-45, HU-021). La fecha del incidente no se edita y las fotos ya guardadas
+ *   se pueden quitar (se mandan sus id en `imagenes_eliminar`).
+ * En ambos modos las fotos nuevas van con la clave `imagenes` repetida.
  */
 function CrearReporte() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { id } = useParams();
+  const editando = Boolean(id);
   const { data: tipos, error: errorTipos } = useTipos();
 
   // La fecha máxima se calcula una vez al abrir la página (el servidor revalida al enviar)
@@ -51,21 +56,71 @@ function CrearReporte() {
     fecha: fechaLocalParaInput(new Date()),
   }));
   const [ubicacion, setUbicacion] = useState({ latitud: null, longitud: null, direccion: '' });
-  const [fotos, setFotos] = useState([]); // [{ id, archivo, url }]
+  // Fotos nuevas: { id, archivo, url }. Fotos ya guardadas (al editar): { id, imagenId, url }.
+  const [fotos, setFotos] = useState([]);
+  const [imagenesEliminar, setImagenesEliminar] = useState([]); // id de fotos guardadas que se quitan
   const [procesandoFotos, setProcesandoFotos] = useState(false);
   const [errores, setErrores] = useState({}); // { campo: ['mensaje'] }, del cliente o del servidor
   const [errorGeneral, setErrorGeneral] = useState(null);
   const [enviando, setEnviando] = useState(false);
+  const [cargandoReporte, setCargandoReporte] = useState(editando);
+  const [errorCarga, setErrorCarga] = useState(null);
 
-  // Libera las URLs de las miniaturas al salir de la página
+  // Libera las URLs de las miniaturas nuevas al salir (las guardadas son URLs del servidor)
   const fotosRef = useRef(fotos);
   useEffect(() => {
     fotosRef.current = fotos;
   }, [fotos]);
-  useEffect(() => () => fotosRef.current.forEach((f) => URL.revokeObjectURL(f.url)), []);
+  useEffect(
+    () => () => fotosRef.current.forEach((f) => f.archivo && URL.revokeObjectURL(f.url)),
+    [],
+  );
+
+  // Modo editar: precarga el reporte. Espera a los tipos para saber si es "Otro".
+  useEffect(() => {
+    if (!editando || !tipos) return;
+    let activo = true;
+    obtenerReporte(id)
+      .then((r) => {
+        if (!activo) return;
+        if (!r.es_autor) {
+          setErrorCarga('Solo el autor puede editar este reporte.');
+          return;
+        }
+        if (r.estado !== 'sin_resolver') {
+          setErrorCarga('Este reporte ya no se puede editar porque está resuelto o expiró.');
+          return;
+        }
+        const esTipoOtro = tipos.find((t) => t.id === r.tipo)?.nombre === 'Otro';
+        setForm({
+          tipo: String(r.tipo),
+          // Con tipo "Otro", tipo_etiqueta trae la descripción que escribió el usuario
+          tipo_otro: esTipoOtro ? r.tipo_etiqueta : '',
+          titulo: r.titulo,
+          descripcion: r.descripcion,
+          gravedad: r.gravedad,
+          fecha: fechaLocalParaInput(new Date(r.fecha_incidente)),
+        });
+        setUbicacion({ latitud: r.latitud, longitud: r.longitud, direccion: r.direccion || '' });
+        setFotos(r.imagenes.map((img) => ({ id: `guardada-${img.id}`, imagenId: img.id, url: img.url })));
+      })
+      .catch((err) => {
+        if (!activo) return;
+        setErrorCarga(
+          statusDe(err) === 404
+            ? 'Este reporte no existe.'
+            : 'No se pudo cargar el reporte. Revisa tu conexión e intenta de nuevo.',
+        );
+      })
+      .finally(() => activo && setCargandoReporte(false));
+    return () => {
+      activo = false;
+    };
+  }, [editando, id, tipos]);
 
   const tipoElegido = tipos?.find((t) => String(t.id) === form.tipo);
   const esOtro = tipoElegido?.nombre === 'Otro';
+  const rutaRegreso = editando ? '/mis-reportes' : '/mapa';
 
   const cambiar = (campo) => (e) => setForm((prev) => ({ ...prev, [campo]: e.target.value }));
   const elegir = (campo, valor) => setForm((prev) => ({ ...prev, [campo]: valor }));
@@ -76,7 +131,7 @@ function CrearReporte() {
     e.target.value = ''; // permite volver a elegir el mismo archivo
     if (archivos.length === 0) return;
 
-    const espacio = MAX_FOTOS - fotos.length;
+    const espacio = MAX_FOTOS - fotos.length; // cuenta guardadas + nuevas
     const mensajes = [];
     if (archivos.length > espacio) mensajes.push(`Puedes subir máximo ${MAX_FOTOS} fotos.`);
 
@@ -95,11 +150,12 @@ function CrearReporte() {
     setErrores((prev) => ({ ...prev, imagenes: mensajes.length ? mensajes : undefined }));
   }
 
-  function quitarFoto(id) {
-    const foto = fotos.find((f) => f.id === id);
-    if (foto) URL.revokeObjectURL(foto.url);
-    setFotos((prev) => prev.filter((f) => f.id !== id));
-    setErrores((prev) => ({ ...prev, imagenes: undefined }));
+  function quitarFoto(fotoId) {
+    const foto = fotos.find((f) => f.id === fotoId);
+    if (foto?.archivo) URL.revokeObjectURL(foto.url);
+    if (foto?.imagenId) setImagenesEliminar((prev) => [...prev, foto.imagenId]);
+    setFotos((prev) => prev.filter((f) => f.id !== fotoId));
+    setErrores((prev) => ({ ...prev, imagenes: undefined, imagenes_eliminar: undefined }));
   }
 
   // Validación rápida en el cliente; el servidor vuelve a validar todo.
@@ -113,10 +169,13 @@ function CrearReporte() {
       e.descripcion = [`La descripción debe tener entre ${DESCRIPCION_MIN} y ${DESCRIPCION_MAX} caracteres.`];
     }
     if (!form.gravedad) e.gravedad = ['Elige la gravedad.'];
-    if (!form.fecha) {
-      e.fecha_incidente = ['Indica la fecha y hora del incidente.'];
-    } else if (new Date(form.fecha).getTime() > Date.now() + MARGEN_FUTURO_MS) {
-      e.fecha_incidente = ['La fecha del incidente no puede estar en el futuro.'];
+    // Al editar, la fecha del incidente no se puede cambiar (HU-021): no se valida
+    if (!editando) {
+      if (!form.fecha) {
+        e.fecha_incidente = ['Indica la fecha y hora del incidente.'];
+      } else if (new Date(form.fecha).getTime() > Date.now() + MARGEN_FUTURO_MS) {
+        e.fecha_incidente = ['La fecha del incidente no puede estar en el futuro.'];
+      }
     }
     if (ubicacion.latitud == null) e.latitud = ['Coloca el pin en el mapa.'];
     return e;
@@ -129,13 +188,16 @@ function CrearReporte() {
     fd.append('titulo', form.titulo.trim());
     fd.append('descripcion', form.descripcion.trim());
     fd.append('gravedad', form.gravedad);
-    fd.append('latitud', ubicacion.latitud.toFixed(6));
-    fd.append('longitud', ubicacion.longitud.toFixed(6));
-    fd.append('direccion', ubicacion.direccion.trim());
-    // datetime-local está en la hora del dispositivo; toISOString() la convierte a UTC
-    fd.append('fecha_incidente', new Date(form.fecha).toISOString());
-    // La MISMA clave repetida, una vez por archivo (no "imagenes[]")
-    fotos.forEach((f) => fd.append('imagenes', f.archivo));
+    fd.append('latitud', Number(ubicacion.latitud).toFixed(6));
+    fd.append('longitud', Number(ubicacion.longitud).toFixed(6));
+    fd.append('direccion', (ubicacion.direccion || '').trim());
+    if (!editando) {
+      // datetime-local está en la hora del dispositivo; toISOString() la convierte a UTC
+      fd.append('fecha_incidente', new Date(form.fecha).toISOString());
+    }
+    // Solo las fotos nuevas; la MISMA clave repetida, una vez por archivo (no "imagenes[]")
+    fotos.forEach((f) => f.archivo && fd.append('imagenes', f.archivo));
+    imagenesEliminar.forEach((imagenId) => fd.append('imagenes_eliminar', imagenId));
     return fd;
   }
 
@@ -153,8 +215,14 @@ function CrearReporte() {
 
     setEnviando(true);
     try {
-      const reporte = await crearReporte(construirFormData());
-      navigate(`/reportes/${reporte.id}`); // 201: al detalle del reporte nuevo
+      if (editando) {
+        await actualizarReporte(id, construirFormData());
+        // UC-06: al guardar se regresa a Mis reportes con un mensaje de éxito
+        navigate('/mis-reportes', { state: { mensaje: 'Los cambios se guardaron.' } });
+      } else {
+        const reporte = await crearReporte(construirFormData());
+        navigate(`/reportes/${reporte.id}`); // 201: al detalle del reporte nuevo
+      }
     } catch (err) {
       const status = statusDe(err);
       if (status === 400) {
@@ -169,11 +237,22 @@ function CrearReporte() {
         // La sesión venció y api.js no pudo renovarla: a /login, que regresa aquí al entrar
         navigate('/login', { state: { from: location } });
       } else if (status === 403) {
-        setErrorGeneral('No tienes permiso para publicar reportes.');
+        setErrorGeneral(
+          editando ? 'Solo el autor puede editar este reporte.' : 'No tienes permiso para publicar reportes.',
+        );
+      } else if (status === 404 && editando) {
+        setErrorGeneral('Este reporte ya no existe.');
+      } else if (status === 409) {
+        // El reporte se resolvió o expiró mientras se editaba (RN-14); el servidor manda el motivo
+        setErrorGeneral(err.response.data?.detail || 'Este reporte ya no admite cambios.');
       } else if (status === 429) {
         setErrorGeneral('Has enviado demasiados reportes, intenta más tarde.');
       } else {
-        setErrorGeneral('No se pudo publicar el reporte. Revisa tu conexión e intenta de nuevo.');
+        setErrorGeneral(
+          editando
+            ? 'No se pudieron guardar los cambios. Revisa tu conexión e intenta de nuevo.'
+            : 'No se pudo publicar el reporte. Revisa tu conexión e intenta de nuevo.',
+        );
       }
     } finally {
       setEnviando(false);
@@ -182,16 +261,41 @@ function CrearReporte() {
 
   const largoDescripcion = form.descripcion.trim().length;
   const errorUbicacion = [errores.latitud, errores.longitud, errores.direccion].flat().filter(Boolean).join(' ');
+  const errorFotos = [errores.imagenes, errores.imagenes_eliminar].flat().filter(Boolean);
 
-  return (
-    <div className="crear-page">
-      <Link to="/mapa" className="row crear-back">
+  const encabezado = (
+    <>
+      <Link to={rutaRegreso} className="row crear-back">
         <span className="icon-btn">
           <Icon name="arrow-l" />
         </span>
-        Mapa y reportes
+        {editando ? 'Mis reportes' : 'Mapa y reportes'}
       </Link>
-      <h1 className="crear-title">Reportar un incidente</h1>
+      <h1 className="crear-title">{editando ? 'Editar reporte' : 'Reportar un incidente'}</h1>
+    </>
+  );
+
+  // Modo editar: mientras carga, o si no se puede editar, no se muestra el formulario
+  if (editando && (errorCarga || (errorTipos && !tipos))) {
+    return (
+      <div className="crear-page">
+        {encabezado}
+        <p className="crear-error">{errorCarga || 'No se pudieron cargar los tipos de incidente.'}</p>
+      </div>
+    );
+  }
+  if (editando && cargandoReporte) {
+    return (
+      <div className="crear-page">
+        {encabezado}
+        <p className="crear-ayuda">Cargando el reporte…</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="crear-page">
+      {encabezado}
 
       {errorGeneral && <Alert type="error" message={errorGeneral} onClose={() => setErrorGeneral(null)} />}
 
@@ -287,7 +391,14 @@ function CrearReporte() {
 
             <label className="crear-field">
               <span>Fecha y hora del incidente</span>
-              <input type="datetime-local" value={form.fecha} onChange={cambiar('fecha')} max={fechaMaxima} />
+              <input
+                type="datetime-local"
+                value={form.fecha}
+                onChange={cambiar('fecha')}
+                max={fechaMaxima}
+                disabled={editando}
+              />
+              {editando && <span className="crear-ayuda">La fecha y hora del incidente no se pueden cambiar.</span>}
               <FieldError errores={errores} campo="fecha_incidente" />
             </label>
           </section>
@@ -335,12 +446,25 @@ function CrearReporte() {
               )}
             </div>
             <p className="crear-ayuda">JPG o PNG, máximo 5 MB cada una. Las fotos grandes se reducen automáticamente.</p>
-            <FieldError errores={errores} campo="imagenes" />
+            {errorFotos.length > 0 && <p className="crear-error">{errorFotos.join(' ')}</p>}
           </section>
 
           <button type="submit" className="btn-primary crear-enviar" disabled={enviando || procesandoFotos}>
-            {enviando ? 'Publicando…' : 'Publicar reporte'}
+            {editando
+              ? (enviando ? 'Guardando…' : 'Guardar cambios')
+              : (enviando ? 'Publicando…' : 'Publicar reporte')}
           </button>
+          {editando && (
+            // UC-06: si cancela, se descartan los cambios y regresa a Mis reportes
+            <button
+              type="button"
+              className="crear-cancelar"
+              onClick={() => navigate('/mis-reportes')}
+              disabled={enviando}
+            >
+              Cancelar
+            </button>
+          )}
         </div>
       </form>
     </div>

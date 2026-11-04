@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import Alert from '../components/common/Alerts';
 import api from '../services/api';
 import './MisReportes.css';
 
@@ -84,6 +85,10 @@ function TarjetaReporte({ reporte, onEditar, onEliminar }) {
 }
 
 export default function MisReportes() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  // Mensaje que manda otra página al regresar aquí (por ejemplo, "Los cambios se guardaron.")
+  const [mensaje, setMensaje] = useState(location.state?.mensaje ?? null);
   const [reportes, setReportes] = useState([]);
   const [resumen, setResumen] = useState(null);
   const [filtro, setFiltro] = useState('');
@@ -109,14 +114,18 @@ export default function MisReportes() {
       .finally(() => setCargando(false));
   }, [filtro]);
 
+  // Borra el mensaje del historial para que no vuelva a salir al recargar la página
+  useEffect(() => {
+    if (location.state?.mensaje) navigate(location.pathname, { replace: true, state: null });
+  }, [location, navigate]);
+
   // Se vuelve a pedir cada vez que cambia el filtro.
   useEffect(() => {
     cargarReportes();
   }, [cargarReportes]);
 
   const handleEditar = (id) => {
-    // TODO: navegar al formulario de edición (RF-45)
-    console.log('Editar reporte', id);
+    navigate(`/reportes/${id}/editar`); // mismo formulario de crear, en modo editar (RF-45)
   };
 
   const handleEliminar = (id) => {
@@ -131,6 +140,8 @@ export default function MisReportes() {
   return (
     <div className="mis-reportes">
       <Link to="/mapa" className="volver">← Volver a Mapa y reportes</Link>
+
+      {mensaje && <Alert type="success" message={mensaje} onClose={() => setMensaje(null)} />}
 
       <div className="mis-reportes-header">
         <h1>Mis reportes</h1>
@@ -169,13 +180,8 @@ export default function MisReportes() {
             </button>
           </div>
         ) : sinReportes ? (
-          // RF-49 / UC-05: el usuario todavía no ha creado reportes
-          <div className="sin-reportes">
-            <p>Aún no has creado reportes.</p>
-            <Link to="/reportes/nuevo" className="btn-accion btn-detalle">
-              Crear reporte
-            </Link>
-          </div>
+          // RF-49 / HU-024: solo el mensaje, sin botón (para crear está «Reportar» en la barra)
+          <p className="sin-reportes">Sin reportes</p>
         ) : reportes.length === 0 ? (
           <p className="sin-reportes">No tienes reportes con este estado.</p>
         ) : (
