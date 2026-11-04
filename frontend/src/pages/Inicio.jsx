@@ -12,6 +12,8 @@ import {
   IconMessageCircle,
   IconCamera,
 } from '@tabler/icons-react';
+import MapaInicio from '../components/inicio/MapaInicio';
+import ReportesRecientes from '../components/inicio/ReportesRecientes';
 import './Inicio.css';
 
 const PASOS = [
@@ -52,19 +54,16 @@ function Inicio()
         </div>
  
         {/* TO DO: reemplazar por el componente del mapa cuando exista */}
-        <div
-          className="inicio-bienvenida__mapa"
-          role="img"
-          aria-label="Espacio reservado para el mapa de incidentes"
-        />
+        <div className="inicio-bienvenida__mapa" >
+          <MapaInicio />
+
+        </div>
       </section>
  
       {/* Reportes recientes */}
       <section className="inicio-reportes">
         <h2>Reportes recientes</h2>
- 
-        {/* TO DO: mapear los reportes reales cuando el modulo exista */}
-        <div className="inicio-reportes__lista" />
+        <ReportesRecientes />
  
         <div className="inicio-reportes__accion">
           <Link to="/crear-reporte" className="inicio-reportes__cta">

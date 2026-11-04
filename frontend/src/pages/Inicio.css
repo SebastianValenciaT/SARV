@@ -39,11 +39,12 @@
   line-height: 1.6;
 }
  
-/* Espacio reservado para el mapa */
+/* Contenedor del mapa de inicio */
 .inicio-bienvenida__mapa {
-  min-height: 280px;
-  background-color: var(--color-primary-light);
+  height: 320px;
+  background-color: var(--color-primary-light); /* se ve mientras cargan los tiles */
   border-radius: calc(var(--radius) * 2);
+  overflow: hidden; /* para que el mapa respete las esquinas redondeadas */
 }
  
 /* Reportes recientes */
