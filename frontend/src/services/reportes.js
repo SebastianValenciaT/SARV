@@ -55,13 +55,18 @@ export async function crearReporte(formData, config) {
   return data;
 }
 
-export async function obtenerReporte(id) {
-  const { data } = await api.get(`/reportes/${id}/`);
-  return data;
-}
-
-export async function actualizarReporte(id, formData) {
-  const { data } = await api.patch(`/reportes/${id}/`, formData);
+/*
+  Edita un reporte propio (PATCH: solo cambia los campos que se mandan).
+  `formData` trae los campos, las fotos nuevas (clave `imagenes` repetida) y
+  los id de las fotos guardadas que se quitan (clave `imagenes_eliminar` repetida).
+  Mismo header multipart que crearReporte. Responde con el JSON del detalle.
+  Requiere sesión y ser el autor: si no, el servidor responde 403.
+*/
+export async function actualizarReporte(id, formData, config) {
+  const { data } = await api.patch(`/reportes/${id}/`, formData, {
+    ...config,
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return data;
 }
 

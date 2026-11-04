@@ -5,7 +5,7 @@ import Icon from '../components/common/Icon';
 import UbicacionPicker from '../components/ubicacion/UbicacionPicker';
 import { iconoPorId, iconoTipo } from '../constants/tipos';
 import { useTipos } from '../hooks/useTipos';
-import { actualizarReporte, crearReporte, obtenerReporte } from '../services/reportes';
+import { actualizarReporte, crearReporte, getReporte } from '../services/reportes';
 import { primerMensaje, statusDe } from '../utils/errores';
 import { fechaLocalParaInput } from '../utils/fechas';
 import { MAX_FOTOS, prepararFoto } from '../utils/imagenes';
@@ -80,7 +80,7 @@ function CrearReporte() {
   useEffect(() => {
     if (!editando || !tipos) return;
     let activo = true;
-    obtenerReporte(id)
+    getReporte(id)
       .then((r) => {
         if (!activo) return;
         if (!r.es_autor) {
