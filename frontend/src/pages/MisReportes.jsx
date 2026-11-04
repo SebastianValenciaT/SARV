@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Alert from '../components/common/Alerts';
+import { eliminarReporte } from '../services/reportes';
 import api from '../services/api';
 import './MisReportes.css';
 
@@ -94,6 +95,7 @@ export default function MisReportes() {
   const [filtro, setFiltro] = useState('');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+    const [errorAccion, setErrorAccion] = useState(null); // error al eliminar
 
   const cargarReportes = useCallback(() => {
     setCargando(true);
@@ -128,11 +130,26 @@ export default function MisReportes() {
     navigate(`/reportes/${id}/editar`); // mismo formulario de crear, en modo editar (RF-45)
   };
 
-  const handleEliminar = (id) => {
-    // TODO: llamar a DELETE /api/reportes/{id}/ cuando exista el endpoint (RF-46)
-    if (window.confirm('¿Estás seguro que deseas eliminar este reporte? Esta acción no se puede deshacer.')) {
-      console.log('Eliminar reporte', id);
+    const handleEliminar = async (id) => {
+    // RN-15 / UC-07: confirmación antes de eliminar
+    if (!window.confirm('¿Estás seguro que deseas eliminar este reporte? Esta acción no se puede deshacer.')) {
+      return;
     }
+    setErrorAccion(null);
+    try {
+      await eliminarReporte(id);
+      setMensaje('El reporte se eliminó.');
+    } catch (err) {
+      const codigo = err.response?.status;
+      if (codigo === 404) {
+        setMensaje('El reporte ya había sido eliminado.');
+      } else if (codigo === 403 || codigo === 409) {
+        setErrorAccion(err.response.data?.detail || 'Este reporte no se puede eliminar.');
+      } else {
+        setErrorAccion('No se pudo eliminar el reporte. Revisa tu conexión e intenta de nuevo.');
+      }
+    }
+    cargarReportes(); // nos quedamos en la lista y se actualizan la lista y el resumen
   };
 
   const sinReportes = resumen?.total === 0;
@@ -142,6 +159,7 @@ export default function MisReportes() {
       <Link to="/mapa" className="volver">← Volver a Mapa y reportes</Link>
 
       {mensaje && <Alert type="success" message={mensaje} onClose={() => setMensaje(null)} />}
+      {errorAccion && <Alert type="error" message={errorAccion} onClose={() => setErrorAccion(null)} />}
 
       <div className="mis-reportes-header">
         <h1>Mis reportes</h1>

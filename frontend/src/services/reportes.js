@@ -69,6 +69,10 @@ export async function actualizarReporte(id, formData, config) {
   });
   return data;
 }
+// Elimina un reporte propio sin resolver. Responde 204 (sin contenido).
+export async function eliminarReporte(id, config) {
+  await api.delete(`/reportes/${id}/`, config);
+}
 
 /*
   Reacciones y denuncias. Las tres responden con el detalle actualizado
