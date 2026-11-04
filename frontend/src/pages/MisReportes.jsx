@@ -1,101 +1,76 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../services/api';
 import './MisReportes.css';
 
-// Datos de prueba. Después estos vendrán del backend (services/api.js)
-const REPORTES_DEMO = [
-  {
-    id: 1,
-    categoria: 'Bache',
-    icono: '🕳️',
-    etiquetaCategoria: '⚠ Bache',
-    estado: 'sin_resolver',
-    titulo: 'Bache profundo en carril derecho',
-    ubicacion: 'Av. Tecnológico y P. Elías Calles',
-    tiempo: 'Hace 2h',
-    fotos: 3,
-    confirmaciones: 8,
-  },
-  {
-    id: 2,
-    categoria: 'Semáforo',
-    icono: '🚦',
-    etiquetaCategoria: '🚦 Semáforo',
-    estado: 'sin_resolver',
-    titulo: 'Semáforo dañado en el cruce',
-    ubicacion: 'Blvd. Zaragoza y de la Raza',
-    tiempo: 'Hace 1 día',
-    fotos: 1,
-    confirmaciones: 3,
-  },
-  {
-    id: 3,
-    categoria: 'Alumbrado',
-    icono: '💡',
-    etiquetaCategoria: '💡 Alumbrado',
-    estado: 'resuelto',
-    titulo: 'Alumbrado público sin funcionar',
-    ubicacion: 'Calle 16 de Septiembre',
-    tiempo: 'Hace 5 días',
-    fotos: 2,
-    confirmaciones: 14,
-  },
-  {
-    id: 4,
-    categoria: 'Otro',
-    icono: '🔌',
-    etiquetaCategoria: '🔌 Otro',
-    estado: 'resuelto',
-    titulo: 'Cable colgando en banqueta',
-    ubicacion: 'Av. Ejército Nacional',
-    tiempo: 'Hace 1 semana',
-    fotos: 1,
-    confirmaciones: 14,
-  },
-];
-
+// `estado` viene del backend: sin_resolver, resuelto o expirado (calculado).
 const ESTADOS = {
   sin_resolver: { texto: 'Sin resolver', clase: 'estado-pendiente' },
   resuelto: { texto: '✓ Resuelto', clase: 'estado-resuelto' },
+  expirado: { texto: 'Expirado', clase: 'estado-expirado' },
 };
 
+// `valor` es lo que se manda como ?estado= ('' = sin filtro)
 const FILTROS = [
-  { valor: 'todos', texto: 'Todos', clase: '' },
+  { valor: '', texto: 'Todos', clase: '' },
   { valor: 'sin_resolver', texto: 'Sin resolver', clase: 'chip-pendiente' },
   { valor: 'resuelto', texto: '✓ Resuelto', clase: 'chip-resuelto' },
 ];
 
+// "Hace 2h", "Hace 3 días"... a partir de una fecha ISO del backend.
+function haceCuanto(fechaIso) {
+  const segundos = Math.floor((Date.now() - new Date(fechaIso)) / 1000);
+  const minutos = Math.floor(segundos / 60);
+  const horas = Math.floor(minutos / 60);
+  const dias = Math.floor(horas / 24);
+
+  if (minutos < 1) return 'Hace un momento';
+  if (minutos < 60) return `Hace ${minutos} min`;
+  if (horas < 24) return `Hace ${horas}h`;
+  if (dias === 1) return 'Hace 1 día';
+  if (dias < 7) return `Hace ${dias} días`;
+  if (dias < 14) return 'Hace 1 semana';
+  if (dias < 30) return `Hace ${Math.floor(dias / 7)} semanas`;
+  return new Date(fechaIso).toLocaleDateString('es-MX');
+}
+
 function TarjetaReporte({ reporte, onEditar, onEliminar }) {
-  const estado = ESTADOS[reporte.estado];
-  const editable = reporte.estado === 'sin_resolver';
+  const estado = ESTADOS[reporte.estado] ?? ESTADOS.sin_resolver;
 
   return (
     <div className="reporte-card">
       <div className="reporte-miniatura">
-        {reporte.icono}
-        <span className="reporte-fotos">{reporte.fotos}</span>
+        {reporte.imagen_principal ? (
+          <img src={reporte.imagen_principal} alt="" className="reporte-imagen" />
+        ) : (
+          '📷'
+        )}
+        {reporte.total_imagenes > 0 && (
+          <span className="reporte-fotos">{reporte.total_imagenes}</span>
+        )}
       </div>
 
       <div className="reporte-info">
         <div className="reporte-etiquetas">
-          <span className="badge badge-categoria">{reporte.etiquetaCategoria}</span>
+          <span className="badge badge-categoria">{reporte.tipo_etiqueta}</span>
           <span className={`badge ${estado.clase}`}>{estado.texto}</span>
         </div>
         <p className="reporte-titulo">{reporte.titulo}</p>
         <p className="reporte-meta">
-           {reporte.ubicacion} &nbsp;·&nbsp;  {reporte.tiempo} &nbsp;·&nbsp; {' '}
-          {reporte.confirmaciones} confirman
+          {reporte.direccion || 'Sin dirección'} &nbsp;·&nbsp; {haceCuanto(reporte.creado_en)}
+          &nbsp;·&nbsp; {reporte.confirmaciones} confirman
         </p>
       </div>
 
       <div className="reporte-acciones">
-        {editable ? (
+        {/* es_editable lo calcula el backend: false si está resuelto o expirado (RF-50) */}
+        {reporte.es_editable ? (
           <>
             <button className="btn-accion btn-editar" onClick={() => onEditar(reporte.id)}>
-               Editar
+              Editar
             </button>
             <button className="btn-accion btn-eliminar" onClick={() => onEliminar(reporte.id)}>
-               Eliminar
+              Eliminar
             </button>
           </>
         ) : (
@@ -109,24 +84,49 @@ function TarjetaReporte({ reporte, onEditar, onEliminar }) {
 }
 
 export default function MisReportes() {
-  const [reportes, setReportes] = useState(REPORTES_DEMO);
-  const [filtro, setFiltro] = useState('todos');
+  const [reportes, setReportes] = useState([]);
+  const [resumen, setResumen] = useState(null);
+  const [filtro, setFiltro] = useState('');
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(null);
 
-  const visibles =
-    filtro === 'todos' ? reportes : reportes.filter((r) => r.estado === filtro);
+  const cargarReportes = useCallback(() => {
+    setCargando(true);
+    setError(null);
+    api.get('/mis-reportes/', { params: filtro ? { estado: filtro } : {} })
+      .then((res) => {
+        setReportes(res.data.results);
+        setResumen(res.data.resumen);
+      })
+      .catch((err) => {
+        const codigo = err.response?.status;
+        if (codigo === 401 || codigo === 403) {
+          setError('Inicia sesión para ver tus reportes.');
+        } else {
+          setError('No se pudieron cargar tus reportes. Revisa tu conexión e intenta de nuevo.');
+        }
+      })
+      .finally(() => setCargando(false));
+  }, [filtro]);
 
-  const contar = (estado) => reportes.filter((r) => r.estado === estado).length;
+  // Se vuelve a pedir cada vez que cambia el filtro.
+  useEffect(() => {
+    cargarReportes();
+  }, [cargarReportes]);
 
   const handleEditar = (id) => {
-    // TODO: navegar al formulario de edición
+    // TODO: navegar al formulario de edición (RF-45)
     console.log('Editar reporte', id);
   };
 
   const handleEliminar = (id) => {
-    if (window.confirm('¿Seguro que quieres eliminar este reporte?')) {
-      setReportes((prev) => prev.filter((r) => r.id !== id));
+    // TODO: llamar a DELETE /api/reportes/{id}/ cuando exista el endpoint (RF-46)
+    if (window.confirm('¿Estás seguro que deseas eliminar este reporte? Esta acción no se puede deshacer.')) {
+      console.log('Eliminar reporte', id);
     }
   };
+
+  const sinReportes = resumen?.total === 0;
 
   return (
     <div className="mis-reportes">
@@ -134,30 +134,52 @@ export default function MisReportes() {
 
       <div className="mis-reportes-header">
         <h1>Mis reportes</h1>
-        <p className="resumen">
-          <span className="punto"></span>
-          {reportes.length} reportes · {contar('sin_resolver')} sin resolver,{' '}
-          {contar('resuelto')} {contar('resuelto') === 1 ? 'resuelto' : 'resueltos'}
-        </p>
+        {resumen && !sinReportes && (
+          <p className="resumen">
+            <span className="punto"></span>
+            {resumen.total} {resumen.total === 1 ? 'reporte' : 'reportes'} · {resumen.activos} sin
+            resolver, {resumen.resueltos} {resumen.resueltos === 1 ? 'resuelto' : 'resueltos'}
+            {resumen.expirados > 0 && `, ${resumen.expirados} expirados`}
+          </p>
+        )}
       </div>
 
-      <div className="filtros">
-        {FILTROS.map((f) => (
-          <button
-            key={f.valor}
-            className={`chip ${f.clase} ${filtro === f.valor ? 'chip-activo' : ''}`}
-            onClick={() => setFiltro(f.valor)}
-          >
-            {f.texto}
-          </button>
-        ))}
-      </div>
+      {!sinReportes && (
+        <div className="filtros">
+          {FILTROS.map((f) => (
+            <button
+              key={f.valor}
+              className={`chip ${f.clase} ${filtro === f.valor ? 'chip-activo' : ''}`}
+              onClick={() => setFiltro(f.valor)}
+            >
+              {f.texto}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="lista-reportes">
-        {visibles.length === 0 ? (
+        {cargando ? (
+          <p className="sin-reportes">Cargando tus reportes...</p>
+        ) : error ? (
+          <div className="sin-reportes">
+            <p>{error}</p>
+            <button className="btn-accion btn-editar" onClick={cargarReportes}>
+              Reintentar
+            </button>
+          </div>
+        ) : sinReportes ? (
+          // RF-49 / UC-05: el usuario todavía no ha creado reportes
+          <div className="sin-reportes">
+            <p>Aún no has creado reportes.</p>
+            <Link to="/reportes/nuevo" className="btn-accion btn-detalle">
+              Crear reporte
+            </Link>
+          </div>
+        ) : reportes.length === 0 ? (
           <p className="sin-reportes">No tienes reportes con este estado.</p>
         ) : (
-          visibles.map((r) => (
+          reportes.map((r) => (
             <TarjetaReporte
               key={r.id}
               reporte={r}

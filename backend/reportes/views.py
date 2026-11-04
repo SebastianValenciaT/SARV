@@ -15,6 +15,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+from django.utils import timezone
+from .filters import FiltroMisReportesSerializer
 
 from . import geo
 from .filters import filtrar_reportes
@@ -29,6 +31,7 @@ from .serializers import (
     ReporteListSerializer,
     ReporteMapaSerializer,
     TipoIncidenteSerializer,
+    MiReporteSerializer,
 )
 
 
@@ -347,3 +350,47 @@ class GeoInversaView(GeoBaseView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(resultado)
+
+class MisReportesView(generics.ListAPIView):
+    serializer_class = MiReporteSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        filtros = FiltroMisReportesSerializer(data=self.request.query_params)
+        filtros.is_valid(raise_exception=True)   # 400 si llega ?estado=otracosa
+        estado = filtros.validated_data.get('estado')
+
+        queryset = reportes_con_conteos().filter(usuario=self.request.user)
+        ahora = timezone.now()
+        if estado == Reporte.ESTADO_EXPIRADO:
+            queryset = queryset.expirados(ahora)
+        elif estado == Reporte.Estado.SIN_RESOLVER:
+            queryset = queryset.filter(estado=Reporte.Estado.SIN_RESOLVER).no_expirados(ahora)
+        elif estado == Reporte.Estado.RESUELTO:
+            queryset = queryset.filter(estado=Reporte.Estado.RESUELTO)
+        return queryset.order_by('-creado_en', '-id')
+
+    def resumen(self):
+        """Totales de TODOS los reportes del usuario (no dependen del filtro), en una consulta."""
+        ahora = timezone.now()
+        totales = (
+            Reporte.objects.filter(usuario=self.request.user)
+            .con_expiracion()
+            .aggregate(
+                total=Count('id'),
+                resueltos=Count('id', filter=Q(estado=Reporte.Estado.RESUELTO)),
+                expirados=Count('id', filter=Q(
+                    estado=Reporte.Estado.SIN_RESOLVER, expira_en_bd__lte=ahora
+                )),
+            )
+        )
+        totales['activos'] = totales['total'] - totales['resueltos'] - totales['expirados']
+        return totales
+
+    def list(self, request, *args, **kwargs):
+        respuesta = super().list(request, *args, **kwargs)
+        if isinstance(respuesta.data, dict):        # con paginación: {count, next, results...}
+            respuesta.data['resumen'] = self.resumen()
+        else:                                       # sin paginación: lista simple
+            respuesta.data = {'results': respuesta.data, 'resumen': self.resumen()}
+        return respuesta

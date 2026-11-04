@@ -15,4 +15,5 @@ urlpatterns = [
     path('imagenes/<int:pk>/', views.imagen_view, name='imagen'),
     path('geo/buscar/', views.GeoBuscarView.as_view(), name='geo-buscar'),
     path('geo/inversa/', views.GeoInversaView.as_view(), name='geo-inversa'),
+    path('mis-reportes/', views.MisReportesView.as_view(), name='mis-reportes'),
 ]

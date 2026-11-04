@@ -63,3 +63,6 @@ def filtrar_reportes(queryset, query_params):
         # Q permite combinar condiciones con OR (|). icontains = "contiene", sin importar mayúsculas.
         queryset = queryset.filter(Q(titulo__icontains=datos['q']) | Q(direccion__icontains=datos['q']))
     return queryset
+
+class FiltroMisReportesSerializer(serializers.Serializer):
+    estado = serializers.ChoiceField(choices=ESTADOS_FILTRO, required=False, allow_blank=True)

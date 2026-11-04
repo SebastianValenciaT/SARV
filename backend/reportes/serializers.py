@@ -259,3 +259,9 @@ class GeoInversaSerializer(serializers.Serializer):
         if not dentro_de_juarez(datos['lat'], datos['lng']):
             raise serializers.ValidationError('Las coordenadas están fuera de Ciudad Juárez.')
         return datos
+
+class MiReporteSerializer(ReporteListSerializer):
+    es_editable = serializers.BooleanField(read_only=True)   # propiedad del modelo
+
+    class Meta(ReporteListSerializer.Meta):
+        fields = ReporteListSerializer.Meta.fields + ['es_editable']
