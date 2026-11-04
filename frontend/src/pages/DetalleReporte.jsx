@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Alert from '../components/common/Alerts';
 import EstadoBadge from '../components/common/EstadoBadge';
 import Icon from '../components/common/Icon';
@@ -49,6 +49,7 @@ function VolverLink({ destino }) {
 function DetalleReporte() {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const destino = location.state?.from ?? '/reportes';
   // setData reemplaza el reporte con el detalle que responde el servidor tras
   // reaccionar o denunciar: un solo origen de verdad, sin actualizaciones optimistas.
@@ -253,17 +254,24 @@ function DetalleReporte() {
             <div className="card detalle-author">
               <div className="detalle-author-name">{reporte.seguimiento[0].autor}</div>
               <div className="detalle-author-sub">Autor del reporte · visible solo para ti</div>
-              {/* TODO: conectar con PATCH/DELETE reportes/{id}/ cuando existan */}
-              <div className="row detalle-author-actions">
-                <button type="button" className="btn-outline">
-                  <Icon name="edit" size={15} />
-                  Editar
-                </button>
-                <button type="button" className="btn-outline btn-danger">
-                  <Icon name="trash" size={15} />
-                  Eliminar
-                </button>
-              </div>
+              {/* RN-14: resueltos y expirados son de solo lectura, también para el autor */}
+              {reporte.estado === 'sin_resolver' && (
+                <div className="row detalle-author-actions">
+                  <button
+                    type="button"
+                    className="btn-outline"
+                    onClick={() => navigate(`/reportes/${reporte.id}/editar`)}
+                  >
+                    <Icon name="edit" size={15} />
+                    Editar
+                  </button>
+                  {/* TODO: conectar con DELETE reportes/{id}/ (RF-46) */}
+                  <button type="button" className="btn-outline btn-danger">
+                    <Icon name="trash" size={15} />
+                    Eliminar
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </aside>
