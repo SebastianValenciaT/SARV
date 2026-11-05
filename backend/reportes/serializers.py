@@ -224,6 +224,58 @@ class ReporteCreateSerializer(serializers.ModelSerializer):
                 Imagen.objects.create(reporte=reporte, contenido=contenido, tipo_mime=tipo_mime)
         return reporte
 
+# ---------- edición de reportes (PATCH/PUT /api/reportes/{id}/) ----------
+
+class ReporteUpdateSerializer(ReporteCreateSerializer):
+    """Hereda las validaciones de crear (RF-45). Diferencias:
+    - `fecha_incidente` no se edita (HU-021), así que no está en `fields`.
+    - Fotos: `imagenes` son las NUEVAS y `imagenes_eliminar` los id de las guardadas
+      que se quitan. En total no pueden quedar más de MAX_IMAGENES.
+    """
+
+    imagenes_eliminar = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), required=False, write_only=True,
+    )
+
+    class Meta(ReporteCreateSerializer.Meta):
+        fields = [f for f in ReporteCreateSerializer.Meta.fields if f != 'fecha_incidente'] + ['imagenes_eliminar']
+
+    def validate(self, datos):
+        reporte = self.instance
+        # Con PATCH puede no llegar el tipo: se usa el que ya tiene el reporte.
+        tipo = datos.get('tipo', reporte.tipo)
+        if 'tipo_otro' in datos:
+            datos['tipo_otro'] = datos['tipo_otro'].strip()
+        tipo_otro = datos.get('tipo_otro', reporte.tipo_otro)
+        if tipo.es_otro and not tipo_otro:
+            raise serializers.ValidationError({'tipo_otro': 'Describe el tipo de incidente.'})
+
+        actuales = set(reporte.imagenes.values_list('id', flat=True))
+        eliminar = set(datos.get('imagenes_eliminar', []))
+        if eliminar - actuales:
+            raise serializers.ValidationError(
+                {'imagenes_eliminar': 'Alguna de las fotos no pertenece a este reporte.'}
+            )
+        total = len(actuales) - len(eliminar) + len(datos.get('imagenes', []))
+        if total > MAX_IMAGENES:
+            raise serializers.ValidationError(
+                {'imagenes': f'Un reporte puede tener máximo {MAX_IMAGENES} fotos.'}
+            )
+        datos['imagenes_eliminar'] = eliminar
+        return datos
+
+    def update(self, instance, validated_data):
+        nuevas = validated_data.pop('imagenes', [])
+        eliminar = validated_data.pop('imagenes_eliminar', set())
+        with transaction.atomic():   # todo o nada, igual que al crear
+            for campo, valor in validated_data.items():
+                setattr(instance, campo, valor)
+            instance.save()   # recalcula la zona y actualizado_en
+            if eliminar:
+                instance.imagenes.filter(id__in=eliminar).delete()
+            for contenido, tipo_mime in nuevas:
+                Imagen.objects.create(reporte=instance, contenido=contenido, tipo_mime=tipo_mime)
+        return instance
 # ---------- reacciones y denuncias (solo validan el body) ----------
 
 class ReaccionSerializer(serializers.Serializer):
@@ -259,3 +311,9 @@ class GeoInversaSerializer(serializers.Serializer):
         if not dentro_de_juarez(datos['lat'], datos['lng']):
             raise serializers.ValidationError('Las coordenadas están fuera de Ciudad Juárez.')
         return datos
+
+class MiReporteSerializer(ReporteListSerializer):
+    es_editable = serializers.BooleanField(read_only=True)   # propiedad del modelo
+
+    class Meta(ReporteListSerializer.Meta):
+        fields = ReporteListSerializer.Meta.fields + ['es_editable']

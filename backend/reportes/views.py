@@ -15,6 +15,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+from django.utils import timezone
+from .filters import FiltroMisReportesSerializer
 
 from . import geo
 from .filters import filtrar_reportes
@@ -29,6 +31,8 @@ from .serializers import (
     ReporteListSerializer,
     ReporteMapaSerializer,
     TipoIncidenteSerializer,
+    MiReporteSerializer,
+    ReporteUpdateSerializer,
 )
 
 
@@ -117,14 +121,47 @@ class ReporteListCreateView(generics.ListCreateAPIView):
         return Response(salida.data, status=status.HTTP_201_CREATED)
 
 
-class ReporteDetailView(generics.RetrieveAPIView):
-    """GET /api/reportes/{id}/ — detalle con reacciones y seguimiento."""
+class ReporteDetailView(generics.RetrieveUpdateAPIView):
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
-    serializer_class = ReporteDetailSerializer
-    permission_classes = [AllowAny]
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return ReporteDetailSerializer
+        return ReporteUpdateSerializer
 
     def get_queryset(self):
         return reportes_con_detalle()
+
+    def update(self, request, *args, **kwargs):
+        parcial = kwargs.pop('partial', False)   # True con PATCH
+        with transaction.atomic():
+            # Se bloquea la fila igual que en reacciones: si el autor lo resuelve
+            # al mismo tiempo, esta petición espera y ve el estado nuevo.
+            try:
+                reporte = (
+                    Reporte.objects.select_for_update(of=('self',))
+                    .select_related('tipo')
+                    .get(pk=kwargs['pk'])
+                )
+            except Reporte.DoesNotExist:
+                raise NotFound('Este reporte no existe.')
+            if reporte.usuario_id != request.user.id:
+                return error('Solo el autor puede editar este reporte.', 'reporte_ajeno', status.HTTP_403_FORBIDDEN)
+            if not reporte.es_editable:
+                return error_solo_lectura(reporte)   # 409: resuelto o expirado (RN-14)
+
+            entrada = ReporteUpdateSerializer(
+                reporte, data=request.data, partial=parcial, context=self.get_serializer_context()
+            )
+            entrada.is_valid(raise_exception=True)
+            entrada.save()
+
+        # Misma respuesta que GET /reportes/{id}/
+        detalle = reportes_con_detalle().get(pk=reporte.pk)
+        return Response(ReporteDetailSerializer(detalle, context=self.get_serializer_context()).data)
 
 
 class MapaReportesView(generics.ListAPIView):
@@ -347,3 +384,120 @@ class GeoInversaView(GeoBaseView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(resultado)
+
+class ReporteDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """GET /api/reportes/{id}/ — detalle público con reacciones y seguimiento.
+    PUT/PATCH /api/reportes/{id}/ — edita el reporte (RF-45).
+    DELETE /api/reportes/{id}/ — elimina el reporte y sus fotos (RF-46, RN-15).
+    Editar y eliminar: solo el autor (RN-07 / RNF-08) y solo si está sin resolver (RN-14).
+    """
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return ReporteDetailSerializer
+        return ReporteUpdateSerializer
+
+    def get_queryset(self):
+        return reportes_con_detalle()
+
+    def bloquear_para_cambio(self, pk):
+        """Lee y bloquea el reporte (404 si no existe). Devuelve (reporte, error):
+        `error` es la Response 403/409 si no se puede modificar, o None si todo bien.
+        Debe llamarse dentro de transaction.atomic().
+        """
+        try:
+            reporte = (
+                Reporte.objects.select_for_update(of=('self',))
+                .select_related('tipo')
+                .get(pk=pk)
+            )
+        except Reporte.DoesNotExist:
+            raise NotFound('Este reporte no existe.')
+        if reporte.usuario_id != self.request.user.id:
+            return reporte, error(
+                'Solo el autor puede modificar este reporte.', 'reporte_ajeno', status.HTTP_403_FORBIDDEN
+            )
+        if not reporte.es_editable:
+            return reporte, error_solo_lectura(reporte)   # 409: resuelto o expirado
+        return reporte, None
+
+    def update(self, request, *args, **kwargs):
+        parcial = kwargs.pop('partial', False)   # True con PATCH
+        with transaction.atomic():
+            reporte, problema = self.bloquear_para_cambio(kwargs['pk'])
+            if problema:
+                return problema
+            entrada = ReporteUpdateSerializer(
+                reporte, data=request.data, partial=parcial, context=self.get_serializer_context()
+            )
+            entrada.is_valid(raise_exception=True)
+            entrada.save()
+
+        # Misma respuesta que GET /reportes/{id}/
+        detalle = reportes_con_detalle().get(pk=reporte.pk)
+        return Response(ReporteDetailSerializer(detalle, context=self.get_serializer_context()).data)
+
+    def destroy(self, request, *args, **kwargs):
+        with transaction.atomic():
+            reporte, problema = self.bloquear_para_cambio(kwargs['pk'])
+            if problema:
+                return problema
+            # on_delete=CASCADE: se borran también sus imágenes, reacciones y denuncias
+            reporte.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class MisReportesView(generics.ListAPIView):
+    """GET /api/mis-reportes/ — reportes del usuario en sesión (RF-44).
+
+    A diferencia del listado público, aquí SÍ salen los expirados: es su historial.
+    ?estado=sin_resolver|resuelto|expirado filtra (RF-51).
+    La respuesta trae además `resumen` con los totales (RF-52).
+    """
+
+    serializer_class = MiReporteSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        filtros = FiltroMisReportesSerializer(data=self.request.query_params)
+        filtros.is_valid(raise_exception=True)   # 400 si llega ?estado=otracosa
+        estado = filtros.validated_data.get('estado')
+
+        queryset = reportes_con_conteos().filter(usuario=self.request.user)
+        ahora = timezone.now()
+        if estado == Reporte.ESTADO_EXPIRADO:
+            queryset = queryset.expirados(ahora)
+        elif estado == Reporte.Estado.SIN_RESOLVER:
+            queryset = queryset.filter(estado=Reporte.Estado.SIN_RESOLVER).no_expirados(ahora)
+        elif estado == Reporte.Estado.RESUELTO:
+            queryset = queryset.filter(estado=Reporte.Estado.RESUELTO)
+        return queryset.order_by('-creado_en', '-id')
+
+    def resumen(self):
+        """Totales de TODOS los reportes del usuario (no dependen del filtro), en una consulta."""
+        ahora = timezone.now()
+        totales = (
+            Reporte.objects.filter(usuario=self.request.user)
+            .con_expiracion()
+            .aggregate(
+                total=Count('id'),
+                resueltos=Count('id', filter=Q(estado=Reporte.Estado.RESUELTO)),
+                expirados=Count('id', filter=Q(
+                    estado=Reporte.Estado.SIN_RESOLVER, expira_en_bd__lte=ahora
+                )),
+            )
+        )
+        totales['activos'] = totales['total'] - totales['resueltos'] - totales['expirados']
+        return totales
+
+    def list(self, request, *args, **kwargs):
+        respuesta = super().list(request, *args, **kwargs)
+        if isinstance(respuesta.data, dict):        # con paginación: {count, next, results...}
+            respuesta.data['resumen'] = self.resumen()
+        else:                                       # sin paginación: lista simple
+            respuesta.data = {'results': respuesta.data, 'resumen': self.resumen()}
+        return respuesta

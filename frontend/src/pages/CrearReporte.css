@@ -258,3 +258,22 @@
     aspect-ratio: 1;
   }
 }
+
+/* editar: botón para descartar los cambios y volver a Mis reportes */
+.crear-cancelar {
+  height: 46px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.crear-field input:disabled {
+  color: var(--color-text-subtle);
+  background: var(--color-bg);
+  cursor: not-allowed;
+}
