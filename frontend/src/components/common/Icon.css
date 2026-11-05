@@ -1,0 +1,15 @@
+/*
+  Icon.css — Tamaño y trazo por defecto de los iconos (ver Icon.jsx).
+  Cada vista puede sobreescribir width/height segun el contexto.
+*/
+
+.icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

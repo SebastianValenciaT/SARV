@@ -73,10 +73,10 @@
 }
 
 .navbar-cta {
-  background-color: var(--color-accent);
-  color: var(--color-surface);
+  background-color: var(--color-surface);
+  color: var(--color-primary);
   padding: 0.5rem 1.1rem;
-  border-radius: 8px;
+  border-radius: 20px;
   text-decoration: none;
   font-family: var(--font-heading);
   font-weight: 600;
@@ -85,5 +85,5 @@
 }
 
 .navbar-cta:hover {
-  background-color: var(--color-accent-hover);
+  background-color: var(--color-primary-light);
 }

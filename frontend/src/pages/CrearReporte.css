@@ -1,0 +1,260 @@
+/*
+  CrearReporte.css — Formulario "Crear reporte".
+  Dos columnas en pantallas anchas y una sola en celular. Los controles
+  miden al menos 44 px de alto y el texto 16 px (iOS no hace zoom al enfocar).
+  Las piezas base (.card, .btn-primary, .thumb...) viven en styles/ui.css.
+*/
+
+.crear-page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.crear-back {
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.crear-title {
+  margin: 14px 0 18px;
+  font-size: 26px;
+}
+
+.crear-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 20px;
+}
+
+.crear-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.crear-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+}
+
+.crear-sublbl {
+  margin-top: 8px;
+}
+
+/* tipo de incidente */
+.crear-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.crear-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 68px;
+  padding: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.crear-tile .icon {
+  color: var(--color-text-subtle);
+}
+
+.crear-tile.on {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.crear-tile.on .icon {
+  color: var(--color-primary);
+}
+
+/* campos de texto */
+.crear-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.crear-field input,
+.crear-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--color-text);
+}
+
+.crear-field textarea {
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.crear-field input:focus,
+.crear-field textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.crear-contador {
+  align-self: flex-end;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-subtle);
+}
+
+.crear-contador.bajo {
+  color: var(--color-warning);
+}
+
+/* gravedad */
+.crear-seg {
+  display: flex;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--color-bg);
+}
+
+.crear-seg button {
+  flex: 1;
+  min-height: 40px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.crear-seg button.on {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-float);
+}
+
+/* fotos */
+.crear-fotos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.crear-foto,
+.crear-foto-agregar {
+  width: 104px;
+  height: 104px;
+  border-radius: 12px;
+}
+
+.crear-foto-quitar {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(26, 29, 35, 0.72);
+  font-size: 20px;
+  line-height: 1;
+  color: #fff;
+  cursor: pointer;
+}
+
+.crear-foto-agregar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1.5px dashed var(--color-divider);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* el input de archivo se oculta: el <label> completo abre el selector */
+.crear-foto-agregar input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.crear-ayuda {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+
+.crear-error {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-error);
+}
+
+.crear-enviar {
+  height: 50px;
+  font-size: 15px;
+}
+
+/* celular: una sola columna */
+@media (max-width: 900px) {
+  .crear-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .crear-title {
+    font-size: 22px;
+  }
+
+  .crear-card {
+    padding: 14px;
+  }
+
+  .crear-tiles {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .crear-foto,
+  .crear-foto-agregar {
+    width: calc((100% - 20px) / 3);
+    height: auto;
+    aspect-ratio: 1;
+  }
+}
