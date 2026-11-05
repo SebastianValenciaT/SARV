@@ -1,0 +1,46 @@
+.mapa-inicio {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 280px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.mapa-inicio .map-base {
+  width: 100%;
+  height: 100%;
+}
+
+.mapa-inicio__enlace {
+  position: absolute;
+  inset: 0;
+  z-index: 500; /* por encima de los panes de Leaflet */
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 12px;
+  text-decoration: none;
+}
+
+.mapa-inicio__enlace span {
+  background: #fff;
+  color: #1d4ed8;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 8px 14px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.mapa-inicio__error {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 501;
+  background: #fde8e8;
+  color: #b42318;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}

@@ -12,13 +12,15 @@ import {
   IconMessageCircle,
   IconCamera,
 } from '@tabler/icons-react';
+import MapaInicio from '../components/inicio/MapaInicio';
+import ReportesRecientes from '../components/inicio/ReportesRecientes';
 import './Inicio.css';
 
 const PASOS = [
   {
     icono: IconAlertTriangle,
     titulo: 'Selecciona el tipo de incidente',
-    descripcion: 'Elige entre accidente, inundación, tráfico o falla de infraestructura.',
+    descripcion: 'Elige entre accidente, inundación, bache o choque.',
   },
   {
     icono: IconMap2,
@@ -41,7 +43,7 @@ function Inicio()
 {
     return (
     <div className="inicio">
-      {/* Bienvenida + mapa */}
+      {/* Bienvenida y mapa */}
       <section className="inicio-bienvenida">
         <div className="inicio-bienvenida__texto">
           <h1>Reporta y consulta incidentes viales en Ciudad Juárez</h1>
@@ -52,19 +54,16 @@ function Inicio()
         </div>
  
         {/* TO DO: reemplazar por el componente del mapa cuando exista */}
-        <div
-          className="inicio-bienvenida__mapa"
-          role="img"
-          aria-label="Espacio reservado para el mapa de incidentes"
-        />
+        <div className="inicio-bienvenida__mapa" >
+          <MapaInicio />
+
+        </div>
       </section>
  
       {/* Reportes recientes */}
       <section className="inicio-reportes">
         <h2>Reportes recientes</h2>
- 
-        {/* TO DO: mapear los reportes reales cuando el modulo exista */}
-        <div className="inicio-reportes__lista" />
+        <ReportesRecientes />
  
         <div className="inicio-reportes__accion">
           <Link to="/crear-reporte" className="inicio-reportes__cta">
