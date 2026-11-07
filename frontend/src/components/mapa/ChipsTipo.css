@@ -19,6 +19,7 @@
   overflow-x: auto;
   padding: 2px 2px 6px;
   scrollbar-width: thin;
+  overscroll-behavior-x: contain;
 }
 
 .chip-tipo {
@@ -73,5 +74,13 @@
     flex-wrap: nowrap;
     overflow-x: auto;
     padding: 2px 2px 6px;
+    overscroll-behavior-x: contain;
+  }
+}
+
+/* pantallas tactiles: chips de 44px de alto */
+@media (max-width: 600px), (pointer: coarse) {
+  .chip-tipo {
+    height: 44px;
   }
 }

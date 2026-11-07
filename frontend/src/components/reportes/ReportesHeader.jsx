@@ -9,7 +9,14 @@ import './ReportesHeader.css';
  * El boton "Filtros" solo aparece si se recibe onToggleFiltros (la Lista lo usa;
  * el Mapa no, porque filtra con sus chips).
  */
-function ReportesHeader({ total, etiqueta = 'reportes', filtrosActivos = 0, onToggleFiltros, onBuscar }) {
+function ReportesHeader({
+  total,
+  etiqueta = 'reportes',
+  filtrosActivos = 0,
+  filtrosAbiertos = false,
+  onToggleFiltros,
+  onBuscar,
+}) {
   const buscar = (event) => {
     event.preventDefault(); // evita que el formulario recargue la pagina
     const texto = new FormData(event.currentTarget).get('q');
@@ -28,7 +35,13 @@ function ReportesHeader({ total, etiqueta = 'reportes', filtrosActivos = 0, onTo
 
       <div className="reportes-head-tools">
         {onToggleFiltros && (
-          <button type="button" className="reportes-tool-btn" onClick={onToggleFiltros}>
+          <button
+            type="button"
+            className="reportes-tool-btn"
+            aria-expanded={filtrosAbiertos}
+            aria-controls="panel-filtros"
+            onClick={onToggleFiltros}
+          >
             <Icon name="sliders" />
             Filtros
             {filtrosActivos > 0 && <span className="reportes-badge">{filtrosActivos}</span>}
