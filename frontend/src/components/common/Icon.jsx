@@ -230,6 +230,20 @@ const PATHS = {
       <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
     </>
   ),
+  // menu del Navbar en celular: abrir (tres lineas) y cerrar (X)
+  menu: (
+    <>
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h16" />
+    </>
+  ),
+  close: (
+    <>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </>
+  ),
 };
 
 function Icon({ name, size, className = '' }) {
