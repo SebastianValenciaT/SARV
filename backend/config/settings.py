@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 from datetime import timedelta
 from pathlib import Path
+import dj_database_url
 from decouple import config, Csv
 from django.core.exceptions import ImproperlyConfigured
 
@@ -25,6 +26,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-env')
 DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+
+# Render define RENDER_EXTERNAL_HOSTNAME con el dominio público del servicio
+# (p. ej. sarv-api.onrender.com). Lo agregamos solo, para no olvidarlo en ALLOWED_HOSTS.
+RENDER_EXTERNAL_HOSTNAME = config('RENDER_EXTERNAL_HOSTNAME', default='')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# Orígenes de confianza para CSRF. La API usa JWT y no lo necesita, pero el panel
+# /admin/ sí (usa cookies de sesión) y, detrás de HTTPS, Django exige declarar su origen.
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
+
+# Render termina el HTTPS en su balanceador y reenvía a Django por HTTP, avisando con
+# este encabezado. Sin esta línea Django creería que todas las peticiones son inseguras.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Las cookies (sesión del admin y CSRF) solo viajan por HTTPS cuando no estamos en desarrollo.
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 
 # Fuera de desarrollo (DEBUG=False) no se arranca con una clave conocida: con ella
 # cualquiera podría firmar tokens JWT válidos. Con DEBUG=True no estorba.
@@ -57,6 +78,7 @@ AUTH_USER_MODEL = 'usuarios.Usuario'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # sirve los estáticos (CSS del admin) en producción
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -100,6 +122,12 @@ DATABASES = {
     }
 }
 
+# En Render la base llega en una sola variable DATABASE_URL (postgres://usuario:clave@host/nombre).
+# Si existe, sustituye a las variables DB_* de arriba; en local no existe y todo sigue igual.
+DATABASE_URL = config('DATABASE_URL', default='')
+if DATABASE_URL:
+    DATABASES['default'] = dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
@@ -136,6 +164,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+# collectstatic copia aquí los estáticos del admin y de DRF; WhiteNoise los sirve desde esta carpeta.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
+}
 
 
 # Email
