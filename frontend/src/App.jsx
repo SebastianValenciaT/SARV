@@ -25,6 +25,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/registro" element={<Registro />} />
       <Route path="/mis-reportes" element={<Layout><RutaProtegida><MisReportes /></RutaProtegida></Layout>} />
+      <Route path="/reportes/:id/editar" element={<Layout><RutaProtegida><CrearReporte /></RutaProtegida></Layout>} />
     </Routes>
   );
 }

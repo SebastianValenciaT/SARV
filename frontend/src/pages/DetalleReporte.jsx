@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Alert from '../components/common/Alerts';
 import EstadoBadge from '../components/common/EstadoBadge';
 import Icon from '../components/common/Icon';
@@ -9,10 +9,11 @@ import ReaccionesCard from '../components/reportes/ReaccionesCard';
 import { iconoPorId } from '../constants/tipos';
 import { nombreZona } from '../constants/zonas';
 import { useReporte } from '../hooks/useReporte';
-import { getReporte } from '../services/reportes';
+import { eliminarReporte, getReporte } from '../services/reportes';
 import { useTipos } from '../hooks/useTipos';
 import { capitalizar, formatFechaHora, formatRelativa } from '../utils/fechas';
 import './DetalleReporte.css';
+
 
 const GRAVEDADES = { leve: 'Leve', moderado: 'Moderado', grave: 'Grave' };
 
@@ -49,12 +50,15 @@ function VolverLink({ destino }) {
 function DetalleReporte() {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const destino = location.state?.from ?? '/reportes';
   // setData reemplaza el reporte con el detalle que responde el servidor tras
   // reaccionar o denunciar: un solo origen de verdad, sin actualizaciones optimistas.
   const { data: reporte, loading, error, setData } = useReporte(id);
   const { data: tipos } = useTipos();
   const [foto, setFoto] = useState(0);
+  const [errorEliminar, setErrorEliminar] = useState(null);
+  const [eliminando, setEliminando] = useState(false);
 
   // Vuelve a pedir el detalle (por ejemplo, tras un 409 o una denuncia duplicada).
   // Si falla, se queda el detalle que ya se ve.
@@ -63,6 +67,31 @@ function DetalleReporte() {
       setData(await getReporte(id));
     } catch {
       // sin cambios
+    }
+  }
+  async function eliminar() {
+    if (!window.confirm('¿Estás seguro que deseas eliminar este reporte? Esta acción no se puede deshacer.')) {
+      return;
+    }
+    setErrorEliminar(null);
+    setEliminando(true);
+    try {
+      await eliminarReporte(id);
+      navigate(destino, { replace: true }); // HU-016: regresa a Mapa y reportes
+    } catch (err) {
+      const codigo = err.response?.status;
+      if (codigo === 404) {
+        navigate(destino, { replace: true }); // ya no existía
+        return;
+      }
+      setErrorEliminar(
+        codigo === 403 || codigo === 409
+          ? err.response.data?.detail || 'Este reporte no se puede eliminar.'
+          : 'No se pudo eliminar el reporte. Revisa tu conexión e intenta de nuevo.',
+      );
+      if (codigo === 409) refrescar(); // se resolvió o expiró: actualiza el estado en pantalla
+    } finally {
+      setEliminando(false);
     }
   }
 
@@ -253,17 +282,31 @@ function DetalleReporte() {
             <div className="card detalle-author">
               <div className="detalle-author-name">{reporte.seguimiento[0].autor}</div>
               <div className="detalle-author-sub">Autor del reporte · visible solo para ti</div>
-              {/* TODO: conectar con PATCH/DELETE reportes/{id}/ cuando existan */}
-              <div className="row detalle-author-actions">
-                <button type="button" className="btn-outline">
-                  <Icon name="edit" size={15} />
-                  Editar
-                </button>
-                <button type="button" className="btn-outline btn-danger">
-                  <Icon name="trash" size={15} />
-                  Eliminar
-                </button>
-              </div>
+              {/* RN-14: resueltos y expirados son de solo lectura, también para el autor */}
+              {reporte.estado === 'sin_resolver' && (
+                <div className="row detalle-author-actions">
+                  <button
+                    type="button"
+                    className="btn-outline"
+                    onClick={() => navigate(`/reportes/${reporte.id}/editar`)}
+                  >
+                    <Icon name="edit" size={15} />
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-outline btn-danger"
+                    onClick={eliminar}
+                    disabled={eliminando}
+                  >
+                    <Icon name="trash" size={15} />
+                    {eliminando ? 'Eliminando…' : 'Eliminar'}
+                  </button>
+                </div>
+              )}
+              {errorEliminar && (
+                <Alert type="error" message={errorEliminar} onClose={() => setErrorEliminar(null)} />
+              )}
             </div>
           )}
         </aside>

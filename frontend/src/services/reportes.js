@@ -56,6 +56,25 @@ export async function crearReporte(formData, config) {
 }
 
 /*
+  Edita un reporte propio (PATCH: solo cambia los campos que se mandan).
+  `formData` trae los campos, las fotos nuevas (clave `imagenes` repetida) y
+  los id de las fotos guardadas que se quitan (clave `imagenes_eliminar` repetida).
+  Mismo header multipart que crearReporte. Responde con el JSON del detalle.
+  Requiere sesión y ser el autor: si no, el servidor responde 403.
+*/
+export async function actualizarReporte(id, formData, config) {
+  const { data } = await api.patch(`/reportes/${id}/`, formData, {
+    ...config,
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+// Elimina un reporte propio sin resolver. Responde 204 (sin contenido).
+export async function eliminarReporte(id, config) {
+  await api.delete(`/reportes/${id}/`, config);
+}
+
+/*
   Reacciones y denuncias. Las tres responden con el detalle actualizado
   (mismo JSON que getReporte): la página lo usa tal cual para refrescar
   conteos, mi_reaccion, ya_denuncie y estado.
