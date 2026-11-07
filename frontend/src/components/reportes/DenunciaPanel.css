@@ -87,3 +87,10 @@
 .denuncia-acciones button {
   flex: 1 1 auto;
 }
+
+/* pantallas tactiles: texto de 16px para que iOS no haga zoom al enfocar */
+@media (max-width: 600px), (pointer: coarse) {
+  .denuncia-textarea {
+    font-size: 16px;
+  }
+}

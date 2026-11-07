@@ -57,6 +57,7 @@
 }
 
 .mapa-rep-title {
+  overflow-wrap: anywhere;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.25;
@@ -254,7 +255,12 @@
   padding-top: 14px;
 }
 
+.mapa-sheet-cols > * {
+  min-width: 0; /* deja que la direccion haga wrap en vez de desbordar */
+}
+
 .mapa-sheet-value {
+  overflow-wrap: anywhere;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -281,7 +287,8 @@
 
   .mapa-map {
     flex: none;
-    height: 520px;
+    height: 60vh; /* respaldo si el navegador no entiende dvh */
+    height: clamp(360px, 60dvh, 520px);
   }
 
   .mapa-sheet {
@@ -293,6 +300,54 @@
 
   .mapa-sheet-cols {
     gap: 24px;
+  }
+}
+
+/* ---------- celular: el mapa va primero ----------
+   Con CSS (order) y no reordenando el JSX: en escritorio la lista va a la izquierda
+   y el orden de Tab (chips, lista, mapa) coincide con el visual. Si el mapa fuera
+   primero en el JSX, el desajuste se pasaria al escritorio, donde mas se usa teclado.
+   Limitacion: en celular el orden de Tab no coincide con el visual.
+   El mapa deja ~40% de la pantalla libre para hacer scroll de la pagina con el dedo. */
+@media (max-width: 600px) {
+  .mapa-page {
+    gap: 16px;
+  }
+
+  .mapa-body {
+    gap: 16px;
+  }
+
+  .mapa-map {
+    order: -1;
+    height: 60vh;
+    height: clamp(320px, 60dvh, 520px);
+    border-radius: 16px;
+  }
+
+  .mapa-sidebar {
+    max-height: 300px;
+  }
+
+  .mapa-sheet {
+    max-height: 50%;
+    overflow-y: auto;
+  }
+
+  .mapa-sheet-cols {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mapa-sheet-value {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 400px) {
+  /* "Ordenar por" aun no hace nada y choca con el boton de pantalla completa */
+  .mapa-sort {
+    display: none;
   }
 }
 

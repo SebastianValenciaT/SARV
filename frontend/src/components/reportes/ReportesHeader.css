@@ -106,7 +106,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 250px;
+  flex: 0 1 250px; /* 250px en escritorio, pero puede encogerse */
+  min-width: 0;
   height: 42px;
   padding: 0 14px;
   border: 1px solid var(--color-border);
@@ -129,4 +130,40 @@
 
 .reportes-search input::placeholder {
   color: var(--color-text-subtle);
+}
+
+/* celular: Filtros + Mapa/Lista en una fila y la busqueda abajo a todo lo ancho */
+@media (max-width: 600px) {
+  .reportes-head h1 {
+    font-size: 22px;
+  }
+
+  .reportes-head-tools {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .reportes-search {
+    flex: 1 1 100%;
+  }
+}
+
+/* pantallas tactiles: 44px de alto y texto de 16px (iOS no hace zoom al enfocar) */
+@media (max-width: 600px), (pointer: coarse) {
+  .reportes-tool-btn,
+  .reportes-search {
+    height: 44px;
+  }
+
+  .reportes-toggle {
+    padding: 2px;
+  }
+
+  .reportes-toggle-item {
+    height: 44px;
+  }
+
+  .reportes-search input {
+    font-size: 16px;
+  }
 }

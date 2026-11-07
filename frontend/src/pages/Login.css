@@ -134,6 +134,7 @@
 .login-page {
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -150,4 +151,22 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+}
+
+/* Celular chico: menos margen alrededor de la tarjeta */
+@media (max-width: 400px) {
+  .login-content {
+    padding: 24px 16px;
+  }
+
+  .login-card {
+    padding: 28px 20px;
+  }
+}
+
+/* Pantallas tactiles: texto de 16px (iOS no hace zoom al enfocar) */
+@media (max-width: 600px), (pointer: coarse) {
+  .login-input {
+    font-size: 16px;
+  }
 }

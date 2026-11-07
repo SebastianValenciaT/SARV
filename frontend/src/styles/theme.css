@@ -3,6 +3,14 @@
   Colores, tipografia y radios oficiales segun el documento de
   identidad de marca. Se importa UNA sola vez en main.jsx para que
   todos los componentes puedan usar estas variables (var(--color-primary), etc).
+
+  Puntos de corte (responsive). Las media queries NO aceptan var(), por eso
+  los valores se escriben a mano en cada archivo; usa SOLO estos:
+    @media (max-width: 900px)  tableta: las columnas laterales pasan a una sola columna
+    @media (max-width: 600px)  celular: margen de 16px, imagenes fluidas, menu hamburguesa
+    @media (max-width: 400px)  celular chico (360-400px): ajustes finos
+  Pantallas tactiles (zonas de 44x44 px e inputs de 16px para que iOS no haga zoom):
+    @media (max-width: 600px), (pointer: coarse)
 */
 :root {
   /* Colores oficiales*/
