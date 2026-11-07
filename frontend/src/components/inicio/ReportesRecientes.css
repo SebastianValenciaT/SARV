@@ -9,6 +9,7 @@
   scroll-snap-type: x mandatory;
   scrollbar-width: none; /* Firefox */
   padding: 4px 2px 8px;
+  overscroll-behavior-x: contain; /* al llegar al final no arrastra la pagina */
 }
 
 .rec-pista::-webkit-scrollbar {
@@ -16,7 +17,7 @@
 }
 
 .rec-tarjeta {
-  flex: 0 0 280px;
+  flex: 0 0 min(280px, 85%); /* en celular se asoma la siguiente tarjeta */
   scroll-snap-align: start;
   display: flex;
   flex-direction: column;
@@ -71,6 +72,7 @@
 
 .rec-tarjeta__info h3 {
   margin: 0 0 4px;
+  overflow-wrap: anywhere;
   font-size: 1rem;
 }
 
@@ -111,7 +113,7 @@
 }
 
 /* En celular se desliza con el dedo: sin flechas */
-@media (max-width: 640px) {
+@media (max-width: 600px) {
   .rec-flecha {
     display: none;
   }

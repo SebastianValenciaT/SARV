@@ -5,6 +5,8 @@
   min-height: 280px;
   border-radius: 12px;
   overflow: hidden;
+  /* encierra el z-index: 500 del enlace para que no tape el menu del Navbar */
+  isolation: isolate;
 }
 
 .mapa-inicio .map-base {
@@ -43,4 +45,10 @@
   padding: 6px 10px;
   border-radius: 8px;
   font-size: 0.8rem;
+}
+
+@media (max-width: 600px) {
+  .mapa-inicio {
+    min-height: 240px;
+  }
 }
