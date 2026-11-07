@@ -113,6 +113,14 @@
   color: var(--color-text);
 }
 
+/* iOS Safari ignora width: 100% en datetime-local y lo deja desbordar */
+.crear-field input[type='datetime-local'] {
+  display: block;
+  min-width: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .crear-field textarea {
   resize: vertical;
   line-height: 1.45;
@@ -192,6 +200,13 @@
   cursor: pointer;
 }
 
+/* zona de toque de 44x44 px sin agrandar el circulo de 30px */
+.crear-foto-quitar::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+}
+
 .crear-foto-agregar {
   display: flex;
   flex-direction: column;
@@ -238,17 +253,13 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .crear-title {
     font-size: 22px;
   }
 
   .crear-card {
     padding: 14px;
-  }
-
-  .crear-tiles {
-    grid-template-columns: repeat(2, 1fr);
   }
 
   .crear-foto,
@@ -276,4 +287,18 @@
   color: var(--color-text-subtle);
   background: var(--color-bg);
   cursor: not-allowed;
+}
+
+/* celular chico: tipos de incidente en dos columnas */
+@media (max-width: 400px) {
+  .crear-tiles {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* pantallas tactiles: botones de gravedad de 44px */
+@media (max-width: 600px), (pointer: coarse) {
+  .crear-seg button {
+    min-height: 44px;
+  }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Link } from 'react-router-dom';
 import Alert from '../components/common/Alerts';
 import EstadoBadge from '../components/common/EstadoBadge';
@@ -21,12 +21,25 @@ const RANGOS = [
 // tipos: ids que vienen de GET /api/tipos/; zona: '' significa "todas"
 const FILTROS_INICIALES = { tipos: [], rango: '7d', zona: '' };
 
+// Mismo punto de corte que ListaReportes.css (900px): arriba de él los filtros van a un lado
+const PANTALLA_ANCHA = '(min-width: 901px)';
+const esPantallaAncha = () => window.matchMedia(PANTALLA_ANCHA).matches;
+const escucharPantalla = (avisar) => {
+  const consulta = window.matchMedia(PANTALLA_ANCHA);
+  consulta.addEventListener('change', avisar);
+  return () => consulta.removeEventListener('change', avisar);
+};
+
 /**
  * Vista G — Lista de reportes con panel de filtros.
  * El primer resultado se muestra expandido y el resto en cuadricula.
  */
 function ListaReportes() {
-  const [showFiltros, setShowFiltros] = useState(true);
+  // useSyncExternalStore lee el ancho actual y vuelve a renderizar si cambia (rotar el teléfono)
+  const pantallaAncha = useSyncExternalStore(escucharPantalla, esPantallaAncha);
+  // null = el usuario no ha tocado "Filtros": abierto en escritorio, cerrado en celular
+  const [filtrosElegido, setFiltrosElegido] = useState(null);
+  const showFiltros = filtrosElegido ?? pantallaAncha;
   // borrador: lo que el usuario va marcando; aplicados: lo que se pide a la API
   const [borrador, setBorrador] = useState(FILTROS_INICIALES);
   const [aplicados, setAplicados] = useState(FILTROS_INICIALES);
@@ -68,14 +81,15 @@ function ListaReportes() {
       <ReportesHeader
         total={data?.count}
         filtrosActivos={aplicados.tipos.length + (aplicados.zona ? 1 : 0)}
-        onToggleFiltros={() => setShowFiltros((v) => !v)}
+        filtrosAbiertos={showFiltros}
+        onToggleFiltros={() => setFiltrosElegido(!showFiltros)}
         onBuscar={setBusqueda}
       />
 
       <div className="lista-body">
         {/* panel de filtros */}
         {showFiltros && (
-          <aside className="lista-filters">
+          <aside id="panel-filtros" className="lista-filters">
             <div className="row lista-filters-head">
               <span className="lista-filters-title">Filtros</span>
               <button type="button" className="lista-link-btn" onClick={limpiar}>

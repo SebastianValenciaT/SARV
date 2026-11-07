@@ -148,8 +148,11 @@
   border-radius: 10px;
   background: var(--color-surface);
   box-shadow: var(--shadow-float);
+  /* max-content: sin esto, al estar en left: 50% solo usaria la mitad del ancho */
+  width: max-content;
+  max-width: calc(100% - 24px);
   font-size: 13px;
-  white-space: nowrap;
+  text-align: center;
   pointer-events: none; /* deja pasar el toque al mapa */
 }
 
@@ -179,8 +182,10 @@
 }
 
 @media (max-width: 600px) {
+  /* deja ~55% de la pantalla libre para hacer scroll del formulario con el dedo */
   .ubi-mapa {
-    height: 300px;
+    height: 45vh;
+    height: clamp(260px, 45dvh, 340px);
   }
 
   .ubi-gps {

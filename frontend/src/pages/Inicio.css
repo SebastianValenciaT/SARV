@@ -155,32 +155,42 @@
   line-height: 1.6;
 }
  
-/*  Responsive  */
-@media (max-width: 960px) {
-  .inicio-pasos__lista {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
- 
-@media (max-width: 760px) {
+/*  Responsive (puntos de corte en theme.css)  */
+@media (max-width: 900px) {
   .inicio-bienvenida {
     grid-template-columns: 1fr;
     gap: 32px;
     padding: 0 0 1.5rem;
   }
- 
+
   .inicio-bienvenida__texto h1 {
-    font-size: 2rem;
+    font-size: clamp(1.75rem, 6vw, 2.25rem);
   }
- 
+
   .inicio-reportes__lista {
     grid-template-columns: 1fr;
   }
-}
- 
-@media (max-width: 520px) {
+
   .inicio-pasos__lista {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
- 
+
+@media (max-width: 600px) {
+  .inicio-bienvenida__mapa {
+    height: 240px;
+  }
+
+  .inicio-pasos h2 {
+    font-size: 1.5rem;
+  }
+
+  .inicio-pasos__lista {
+    grid-template-columns: 1fr;
+    margin-top: 24px;
+  }
+
+  .paso {
+    padding: 24px;
+  }
+}
