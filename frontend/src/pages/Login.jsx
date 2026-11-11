@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar'; // Importación directa del Navbar del equipo
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 import './Login.css';
+
 
 export default function Login() {
   const location = useLocation();
@@ -24,32 +26,26 @@ export default function Login() {
 
     try {
       // Petición al endpoint del backend para autenticar y obtener tokens JWT
-      const response = await fetch('http://localhost:8000/api/login/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: correo,
-          password: password
-        })
-      });
+      // (api.js ya conoce la dirección del servidor)
+      const { data } = await api.post('/login/', { email: correo, password });
 
-      const data = await response.json();
+      // Almacenamos los tokens de sesión en el navegador
+      login(data.access, data.refresh);
 
-      if (response.ok) {
-        // Almacenamos los tokens de sesión en el navegador
-        login(data.access, data.refresh);
-        
-        // Redirige al usuario a la página principal o ruta raíz
-        navigate('/'); 
-      } else {
+      // Regresa a la página protegida que se pidió (RutaProtegida la guarda) o a Inicio
+      navigate(location.state?.from?.pathname ?? '/', { replace: true });
+    } catch (err) {
+      const status = err.response?.status;
+      if (status === 401) {
         // Si las credenciales fallan, mostramos el error
         setError('Correo o contraseña incorrectos. Verifica tus datos.');
+      } else if (status === 429) {
+        setError('Demasiados intentos de inicio de sesión. Espera un momento e intenta de nuevo.');
+      } else if (!err.response) {
+        setError('Error al conectar con el servidor. Verifica que el backend esté encendido.');
+      } else {
+        setError('No se pudo iniciar sesión. Intenta de nuevo.');
       }
-    } catch (err) {
-      console.error('Error de red:', err);
-      setError('Error al conectar con el servidor. Verifica que el backend esté encendido.');
     }
   };
 

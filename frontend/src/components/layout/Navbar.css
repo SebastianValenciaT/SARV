@@ -5,6 +5,10 @@
 */
 
 .navbar {
+  /* relative: referencia del menu desplegable; z-index 50: encima del contenido
+     (overlays de mapas, carrusel) y debajo del mapa en pantalla completa (100) */
+  position: relative;
+  z-index: 50;
   background-color: var(--color-primary);
   padding: 0.75rem 1.5rem;
 }
@@ -98,4 +102,102 @@
 
 .navbar-cta:hover {
   background-color: var(--color-primary-light);
+}
+
+/* ---------- responsive (puntos de corte en theme.css) ---------- */
+
+/* Boton hamburguesa y fondo del menu: solo existen en celular */
+.navbar-toggle,
+.navbar-backdrop {
+  display: none;
+}
+
+.navbar-toggle {
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-surface);
+}
+
+.navbar-toggle .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.navbar-toggle:focus-visible {
+  outline: 2px solid var(--color-surface);
+  outline-offset: 2px;
+}
+
+/* Tableta: menos espacio entre enlaces */
+@media (max-width: 900px) {
+  .navbar-right,
+  .navbar-links {
+    gap: 1rem;
+  }
+}
+
+/* Celular: barra compacta (marca + boton principal + hamburguesa) y menu desplegable */
+@media (max-width: 600px) {
+  .navbar {
+    padding: 0.5rem 1rem;
+  }
+
+  .navbar-right {
+    gap: 0.5rem;
+  }
+
+  .navbar-toggle {
+    display: inline-flex;
+  }
+
+  .navbar-cta {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* Cubre toda la pantalla, transparente. z-index -1 dentro del navbar: queda
+     encima del fondo azul y de la pagina, pero debajo de los botones de la barra */
+  .navbar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+  }
+
+  .navbar-links {
+    display: none;
+  }
+
+  .navbar-links--abierto {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0.25rem 1rem 0.75rem;
+    background-color: var(--color-primary);
+    box-shadow: var(--shadow-float);
+  }
+
+  .navbar-links--abierto li + li {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .navbar-links--abierto .navbar-link {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 48px;
+    font-size: 1rem;
+  }
 }

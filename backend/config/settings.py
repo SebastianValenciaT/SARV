@@ -10,8 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
+import dj_database_url
 from decouple import config, Csv
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,6 +27,34 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-env')
 DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
+# Render define RENDER_EXTERNAL_HOSTNAME con el dominio público del servicio
+# (p. ej. sarv-api.onrender.com). Lo agregamos solo, para no olvidarlo en ALLOWED_HOSTS.
+RENDER_EXTERNAL_HOSTNAME = config('RENDER_EXTERNAL_HOSTNAME', default='')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# Orígenes de confianza para CSRF. La API usa JWT y no lo necesita, pero el panel
+# /admin/ sí (usa cookies de sesión) y, detrás de HTTPS, Django exige declarar su origen.
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
+
+# Render termina el HTTPS en su balanceador y reenvía a Django por HTTP, avisando con
+# este encabezado. Sin esta línea Django creería que todas las peticiones son inseguras.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Las cookies (sesión del admin y CSRF) solo viajan por HTTPS cuando no estamos en desarrollo.
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
+# Fuera de desarrollo (DEBUG=False) no se arranca con una clave conocida: con ella
+# cualquiera podría firmar tokens JWT válidos. Con DEBUG=True no estorba.
+CLAVES_INSEGURAS = {'django-insecure-change-me-in-env', 'cambia-esto-por-una-clave-larga-y-aleatoria'}
+if not DEBUG and (SECRET_KEY in CLAVES_INSEGURAS or SECRET_KEY.startswith('django-insecure')):
+    raise ImproperlyConfigured(
+        'SECRET_KEY insegura con DEBUG=False. Define en .env una clave aleatoria de al menos 32 caracteres.'
+    )
+
 
 # Application definition
 
@@ -35,6 +66,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt',  # solo para sus mensajes en español; no crea tablas
     'corsheaders',
     'core',
     'usuarios',
@@ -46,6 +78,7 @@ AUTH_USER_MODEL = 'usuarios.Usuario'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # sirve los estáticos (CSS del admin) en producción
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -89,6 +122,12 @@ DATABASES = {
     }
 }
 
+# En Render la base llega en una sola variable DATABASE_URL (postgres://usuario:clave@host/nombre).
+# Si existe, sustituye a las variables DB_* de arriba; en local no existe y todo sigue igual.
+DATABASE_URL = config('DATABASE_URL', default='')
+if DATABASE_URL:
+    DATABASES['default'] = dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
@@ -125,6 +164,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+# collectstatic copia aquí los estáticos del admin y de DRF; WhiteNoise los sirve desde esta carpeta.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
+}
 
 
 # Email
@@ -155,6 +200,10 @@ NOMINATIM_BASE_URL = config('NOMINATIM_BASE_URL', default='https://nominatim.ope
 NOMINATIM_USER_AGENT = config('NOMINATIM_USER_AGENT', default='SARV-dev/0.1 (contacto no configurado)')
 
 REST_FRAMEWORK = {
+    # Solo JWT (encabezado "Authorization: Bearer <access>"). Sin token, lo protegido
+    # responde 401. Ya no se acepta Basic ni la sesión de Django en la API
+    # (el admin sigue usando su propia sesión, no pasa por DRF).
+    'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework_simplejwt.authentication.JWTAuthentication'],
     # Por defecto: leer es público, escribir requiere sesión. Así los endpoints de
     # escritura nacen protegidos; los de lectura pública declaran AllowAny a mano.
     'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
@@ -164,5 +213,22 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'geo': '30/min',
         'reportes_crear': '20/hour',   # solo POST /api/reportes/ (cuenta todos los intentos)
+        'reacciones': '60/min',        # PUT y DELETE de reportes/{id}/reaccion/ (juntos)
+        'denuncias': '10/hour',        # POST reportes/{id}/denuncias/
+        # Login y registro: por IP (son anónimos). Generosos porque en una demostración
+        # muchas personas comparten la IP de la misma red.
+        'auth_login': '20/min',        # cuenta todos los intentos, también los correctos
+        'auth_registro': '50/hour',
     },
+}
+
+# Tokens JWT (simplejwt). El access dura poco para limitar el daño si se filtra; el
+# frontend lo renueva solo con el refresh, así que el usuario no lo nota.
+# Sin rotación del refresh: no hace falta la lista negra (que agregaría tablas).
+# Consecuencia: cerrar sesión solo borra los tokens del navegador.
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': False,
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }

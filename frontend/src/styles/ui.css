@@ -156,3 +156,23 @@
   border-radius: 50%;
   background: var(--color-divider);
 }
+
+/* Pantallas tactiles: zonas de toque de al menos 44x44 px (ver puntos de corte en theme.css) */
+@media (max-width: 600px), (pointer: coarse) {
+  .btn-primary,
+  .btn-outline {
+    min-height: 44px; /* gana sobre el height fijo de arriba */
+  }
+
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* botones de zoom de Leaflet en los mapas que se pueden mover */
+  .leaflet-touch .leaflet-bar a {
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
+  }
+}

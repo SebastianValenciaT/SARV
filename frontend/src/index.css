@@ -21,4 +21,5 @@ body {
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh; /* en celular descuenta las barras del navegador; si no lo entiende, usa 100vh */
 }

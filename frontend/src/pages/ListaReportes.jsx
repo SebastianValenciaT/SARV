@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Link } from 'react-router-dom';
 import Alert from '../components/common/Alerts';
+import EstadoBadge from '../components/common/EstadoBadge';
 import Icon from '../components/common/Icon';
 import MiniMap from '../components/common/MiniMap';
 import ReportesHeader from '../components/reportes/ReportesHeader';
@@ -20,12 +21,25 @@ const RANGOS = [
 // tipos: ids que vienen de GET /api/tipos/; zona: '' significa "todas"
 const FILTROS_INICIALES = { tipos: [], rango: '7d', zona: '' };
 
+// Mismo punto de corte que ListaReportes.css (900px): arriba de él los filtros van a un lado
+const PANTALLA_ANCHA = '(min-width: 901px)';
+const esPantallaAncha = () => window.matchMedia(PANTALLA_ANCHA).matches;
+const escucharPantalla = (avisar) => {
+  const consulta = window.matchMedia(PANTALLA_ANCHA);
+  consulta.addEventListener('change', avisar);
+  return () => consulta.removeEventListener('change', avisar);
+};
+
 /**
  * Vista G — Lista de reportes con panel de filtros.
  * El primer resultado se muestra expandido y el resto en cuadricula.
  */
 function ListaReportes() {
-  const [showFiltros, setShowFiltros] = useState(true);
+  // useSyncExternalStore lee el ancho actual y vuelve a renderizar si cambia (rotar el teléfono)
+  const pantallaAncha = useSyncExternalStore(escucharPantalla, esPantallaAncha);
+  // null = el usuario no ha tocado "Filtros": abierto en escritorio, cerrado en celular
+  const [filtrosElegido, setFiltrosElegido] = useState(null);
+  const showFiltros = filtrosElegido ?? pantallaAncha;
   // borrador: lo que el usuario va marcando; aplicados: lo que se pide a la API
   const [borrador, setBorrador] = useState(FILTROS_INICIALES);
   const [aplicados, setAplicados] = useState(FILTROS_INICIALES);
@@ -67,14 +81,15 @@ function ListaReportes() {
       <ReportesHeader
         total={data?.count}
         filtrosActivos={aplicados.tipos.length + (aplicados.zona ? 1 : 0)}
-        onToggleFiltros={() => setShowFiltros((v) => !v)}
+        filtrosAbiertos={showFiltros}
+        onToggleFiltros={() => setFiltrosElegido(!showFiltros)}
         onBuscar={setBusqueda}
       />
 
       <div className="lista-body">
         {/* panel de filtros */}
         {showFiltros && (
-          <aside className="lista-filters">
+          <aside id="panel-filtros" className="lista-filters">
             <div className="row lista-filters-head">
               <span className="lista-filters-title">Filtros</span>
               <button type="button" className="lista-link-btn" onClick={limpiar}>
@@ -198,19 +213,15 @@ function ListaReportes() {
                   <span className="lista-feat-count">
                     <b>{destacado.confirmaciones}</b> confirman
                   </span>
+                  {/* Solo los estados que no son el normal (por defecto no llegan expirados) */}
+                  {destacado.estado !== 'sin_resolver' && <EstadoBadge estado={destacado.estado} />}
                   <span className="row lista-feat-actions">
-                    {/* TODO(auth): habilitar cuando exista inicio de sesión (reaccionar requiere login) */}
-                    <button
-                      type="button"
-                      className="btn-outline lista-feat-react"
-                      disabled
-                      title="Inicia sesión para reaccionar"
+                    {/* Reaccionar vive en el detalle */}
+                    <Link
+                      to={`/reportes/${destacado.id}`}
+                      state={{ from: '/reportes' }}
+                      className="btn-primary"
                     >
-                      <Icon name="like" />
-                      Reaccionar
-                      <Icon name="down" size={14} />
-                    </button>
-                    <Link to={`/reportes/${destacado.id}`} className="btn-primary">
                       Ver detalle <Icon name="arrow-r" />
                     </Link>
                   </span>
@@ -229,7 +240,12 @@ function ListaReportes() {
           {/* cuadricula */}
           <div className="lista-grid">
             {resto.map((reporte) => (
-              <Link key={reporte.id} to={`/reportes/${reporte.id}`} className="card lista-rc">
+              <Link
+                key={reporte.id}
+                to={`/reportes/${reporte.id}`}
+                state={{ from: '/reportes' }}
+                className="card lista-rc"
+              >
                 <div className="lista-rc-head">
                   <span className="lista-rc-icon">
                     <Icon name={iconoPorId(tipos, reporte.tipo)} />
@@ -243,6 +259,9 @@ function ListaReportes() {
                 <div className="lista-rc-date">
                   <Icon name="cal" />
                   {formatCuando(reporte.fecha_incidente)}
+                  {reporte.estado !== 'sin_resolver' && (
+                    <EstadoBadge estado={reporte.estado} className="lista-rc-estado" />
+                  )}
                 </div>
                 <div className="lista-rc-count">
                   Confirmaciones<b>{reporte.confirmaciones}</b>

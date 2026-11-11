@@ -1,0 +1,57 @@
+# Blueprint de Render: crea base de datos + API (Django) + sitio estático (React).
+# Uso: Render > New > Blueprint > elegir este repositorio.
+# Las variables con "sync: false" se piden al crear el Blueprint (o se editan después en el panel).
+
+databases:
+  - name: sarv-db
+    plan: free
+    databaseName: sarv
+    user: sarv_user
+
+services:
+  # ---------- Backend: Django REST ----------
+  - type: web
+    name: sarv-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: ./build.sh
+    startCommand: gunicorn config.wsgi:application
+    healthCheckPath: /api/ping/
+    envVars:
+      - key: PYTHON_VERSION          # Django 6.1 necesita Python 3.12 o superior
+        value: 3.12.8
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY              # Render genera una clave aleatoria larga
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sarv-db
+          property: connectionString
+      - key: CORS_ALLOWED_ORIGINS    # URL del sitio estático, p. ej. https://sarv-web.onrender.com (sin "/" final)
+        sync: false
+      - key: NOMINATIM_USER_AGENT    # Política de Nominatim: nombre de la app + contacto, p. ej. SARV/1.0 (tucorreo@dominio.com)
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL  # Opcional: crea el administrador de /admin/ en el primer despliegue
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
+
+  # ---------- Frontend: React + Vite ----------
+  - type: web
+    name: sarv-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION            # Vite 8 pide Node 20.19+ o 22.12+
+        value: 22
+      - key: VITE_API_URL            # URL del backend + /api, p. ej. https://sarv-api.onrender.com/api
+        sync: false
+    routes:
+      # React Router: cualquier ruta (/mapa, /reportes/3...) debe devolver index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html

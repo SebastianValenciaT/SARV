@@ -10,6 +10,8 @@
 
 /* ---------- barra superior ---------- */
 .detalle-topbar {
+  flex-wrap: wrap;
+  gap: 8px;
   justify-content: space-between;
 }
 
@@ -53,7 +55,8 @@
 
 .detalle-title {
   margin: 0;
-  font-size: 25px;
+  overflow-wrap: anywhere;
+  font-size: clamp(20px, 5vw, 25px);
   font-weight: 700;
   letter-spacing: -0.015em;
   line-height: 1.2;
@@ -73,6 +76,7 @@
 
 .detalle-desc {
   margin: 10px 0 0;
+  overflow-wrap: anywhere;
   font-size: 13px;
   color: var(--color-text-muted);
 }
@@ -82,7 +86,7 @@
   flex: none;
   display: flex;
   gap: 10px;
-  height: 476px;
+  height: clamp(300px, 40vw, 476px); /* 476px desde ~1190px de ancho */
   margin-top: 14px;
   padding: 12px;
   border-radius: 20px;
@@ -150,13 +154,15 @@
 /* informacion + reacciones */
 .detalle-cards {
   display: flex;
+  flex-wrap: wrap; /* si no caben lado a lado, reacciones baja debajo de informacion */
   align-items: stretch;
   gap: 24px;
   margin-top: 16px;
 }
 
 .detalle-info {
-  width: 326px;
+  flex: 1 1 326px;
+  min-width: 0;
   padding: 20px 20px 16px;
 }
 
@@ -164,6 +170,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   margin-top: 14px;
   font-size: 13px;
   color: var(--color-text-muted);
@@ -174,6 +181,9 @@
 }
 
 .detalle-info-row b {
+  min-width: 0;
+  overflow-wrap: anywhere; /* direcciones largas hacen wrap a la derecha */
+  text-align: right;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -182,7 +192,8 @@
 }
 
 .detalle-react {
-  width: 268px;
+  flex: 1 1 268px;
+  min-width: 0;
   padding: 20px;
 }
 
@@ -194,8 +205,9 @@
 
 .detalle-rt {
   position: relative;
-  width: 118px;
-  height: 88px;
+  flex: 1;
+  min-width: 0;
+  min-height: 88px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -269,6 +281,7 @@
 }
 
 .detalle-location-street {
+  overflow-wrap: anywhere;
   padding: 10px 4px 0;
   font-size: 13px;
   font-weight: 600;
@@ -372,4 +385,102 @@
 .detalle-author-actions .btn-outline {
   flex: 1;
   height: 40px;
+}
+
+/* nota bajo los tiles (reporte resuelto o vista del autor) */
+.detalle-react-nota {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+/* confirmación del autor antes de marcar como resuelto */
+.detalle-react-confirm {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius);
+  background: var(--color-warning-bg);
+}
+
+.detalle-react-confirm p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.detalle-react-confirm-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detalle-react-alert .alert {
+  margin: 14px 0 0;
+}
+
+/* ---------- responsive (puntos de corte en theme.css) ---------- */
+/* tableta: la columna lateral baja debajo de la principal */
+@media (max-width: 900px) {
+  .detalle-body {
+    flex-direction: column;
+  }
+
+  .detalle-side {
+    width: 100%;
+  }
+
+  .detalle-location-map {
+    height: 160px;
+  }
+}
+
+/* celular: galeria con la foto arriba y las miniaturas en fila */
+@media (max-width: 600px) {
+  .detalle-gal {
+    flex-direction: column;
+    height: auto;
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .detalle-gal-main {
+    flex: none;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+  }
+
+  .detalle-gal-side {
+    flex-direction: row;
+    width: auto;
+    overflow-x: auto;
+  }
+
+  .detalle-gal-side .thumb {
+    width: 72px;
+    height: 54px;
+  }
+
+  .detalle-cards {
+    gap: 16px;
+  }
+
+  .detalle-info,
+  .detalle-react {
+    flex-basis: 100%;
+  }
+
+  .detalle-denunciar {
+    align-self: stretch;
+  }
+}
+
+/* pantallas tactiles: flechas de la galeria y boton volver de 44px */
+@media (max-width: 600px), (pointer: coarse) {
+  .detalle-gal-nav button,
+  .detalle-back-btn {
+    width: 44px;
+    height: 44px;
+  }
 }

@@ -45,12 +45,55 @@ export async function getReportesMapa(params, config) {
   header axios convertiría el FormData a JSON (los archivos se perderían).
   Al indicar multipart, axios deja el FormData intacto y el navegador escribe
   el header real con su "boundary" (el separador entre campos).
-  TODO(auth): el token lo agregará el cliente de api.js cuando exista useAuth().
+  Requiere sesión: el token lo agrega api.js.
 */
 export async function crearReporte(formData, config) {
   const { data } = await api.post('/reportes/', formData, {
     ...config,
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+  return data;
+}
+
+/*
+  Edita un reporte propio (PATCH: solo cambia los campos que se mandan).
+  `formData` trae los campos, las fotos nuevas (clave `imagenes` repetida) y
+  los id de las fotos guardadas que se quitan (clave `imagenes_eliminar` repetida).
+  Mismo header multipart que crearReporte. Responde con el JSON del detalle.
+  Requiere sesión y ser el autor: si no, el servidor responde 403.
+*/
+export async function actualizarReporte(id, formData, config) {
+  const { data } = await api.patch(`/reportes/${id}/`, formData, {
+    ...config,
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+// Elimina un reporte propio sin resolver. Responde 204 (sin contenido).
+export async function eliminarReporte(id, config) {
+  await api.delete(`/reportes/${id}/`, config);
+}
+
+/*
+  Reacciones y denuncias. Las tres responden con el detalle actualizado
+  (mismo JSON que getReporte): la página lo usa tal cual para refrescar
+  conteos, mi_reaccion, ya_denuncie y estado.
+  Requieren sesión (el token lo agrega api.js); sin ella el servidor responde 401.
+*/
+
+// Crea o cambia mi reacción. tipo: 'sin_resolver' | 'resuelto'
+export async function reaccionar(id, tipo, config) {
+  const { data } = await api.put(`/reportes/${id}/reaccion/`, { tipo }, config);
+  return data;
+}
+
+// Quita mi reacción (si no tenía, responde igual)
+export async function quitarReaccion(id, config) {
+  const { data } = await api.delete(`/reportes/${id}/reaccion/`, config);
+  return data;
+}
+
+export async function denunciar(id, motivo, config) {
+  const { data } = await api.post(`/reportes/${id}/denuncias/`, { motivo }, config);
   return data;
 }

@@ -10,6 +10,8 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.throttling import ScopedRateThrottle
 
+from usuarios.models import Usuario
+
 from . import geo
 from .zonas import LAT_MAX, LAT_MIN, LNG_MAX, LNG_MIN
 
@@ -53,12 +55,23 @@ class BaseGeo(APITestCase):
         self.sleep = patcher_sleep.start()
         self.addCleanup(patcher_get.stop)
         self.addCleanup(patcher_sleep.stop)
+        # Geocodificar requiere sesión
+        self.usuario = Usuario.objects.create_user('geo@correo.mx', 'secreto1', nombre='Geo')
+        self.client.force_authenticate(self.usuario)
 
     def buscar(self, q):
         return self.client.get(reverse('geo-buscar'), {'q': q})
 
     def inversa(self, lat, lng):
         return self.client.get(reverse('geo-inversa'), {'lat': lat, 'lng': lng})
+
+
+class PermisosGeoTests(BaseGeo):
+    def test_anonimo_recibe_401_y_no_llama_a_nominatim(self):
+        self.client.force_authenticate(None)
+        self.assertEqual(self.buscar('Av. Tecnológico').status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(self.inversa(31.7105, -106.4245).status_code, status.HTTP_401_UNAUTHORIZED)
+        self.get.assert_not_called()
 
 
 class BuscarTests(BaseGeo):

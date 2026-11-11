@@ -33,8 +33,17 @@
   color: var(--color-primary);
   font-size: 0.8rem;
   text-decoration: underline;
+  /* bloque con padding para que el enlace mida 44px de alto al tocarlo */
+  display: inline-block;
+  padding: 0.85rem 0.5rem;
 }
 
 .footer-link:hover {
   color: var(--color-primary-hover);
+}
+
+@media (max-width: 600px) {
+  .footer {
+    padding: 1rem 1rem 0.5rem;
+  }
 }
