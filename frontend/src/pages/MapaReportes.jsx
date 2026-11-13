@@ -27,6 +27,29 @@ import './MapaReportes.css';
  * Es el mismo MapContainer, solo cambia su tamaño: se conservan centro, zoom,
  * filtro y pin seleccionado.
  */
+
+/**
+ * Foto de un reporte con respaldo. Si no hay `src` o la imagen falla al cargar
+ * (onError), muestra el ícono del tipo; sin `icono`, no muestra nada.
+ * alt="" porque el título del reporte ya está escrito al lado: el lector de
+ * pantalla no necesita oírlo dos veces.
+ * Quien la usa le pone key={src}: así, si cambia la foto, el estado `fallo` se reinicia.
+ */
+function Miniatura({ src, icono, className = 'thumb' }) {
+  const [fallo, setFallo] = useState(false);
+  const hayFoto = Boolean(src) && !fallo;
+  if (!hayFoto && !icono) return null;
+  return (
+    <div className={className}>
+      {hayFoto ? (
+        <img src={src} alt="" loading="lazy" onError={() => setFallo(true)} />
+      ) : (
+        <Icon name={icono} />
+      )}
+    </div>
+  );
+}
+
 function MapaReportes() {
   const [categoria, setCategoria] = useState('todos'); // 'todos' o id de tipo
   const [busqueda, setBusqueda] = useState('');
@@ -80,9 +103,11 @@ function MapaReportes() {
                 className={`card mapa-rep ${reporte.id === selected?.id ? 'on' : ''}`}
                 onClick={() => setSelectedId(reporte.id)}
               >
-                <div className="thumb">
-                  <Icon name={iconoPorId(tipos, reporte.tipo)} />
-                </div>
+                <Miniatura
+                  key={reporte.imagen_principal}
+                  src={reporte.imagen_principal}
+                  icono={iconoPorId(tipos, reporte.tipo)}
+                />
                 <div>
                   <div className="mapa-rep-title">{reporte.titulo}</div>
                   <div className="mapa-rep-meta">
@@ -156,19 +181,11 @@ function MapaReportes() {
             </p>
           )}
 
-          <div className="mapa-sort">
-            Ordenar por <b>Más recientes</b>
-            <Icon name="down" size={14} />
-          </div>
-
           {selected && (
             <div className="mapa-sheet">
               <div className="mapa-sheet-top">
                 <span className="mapa-sheet-tab">Detalles</span>
                 <span className="mapa-sheet-spacer" />
-                <button type="button" className="icon-btn mapa-sheet-share" aria-label="Compartir">
-                  <Icon name="share" />
-                </button>
                 <Link
                   to={`/reportes/${selected.id}`}
                   state={{ from: '/mapa' }}
@@ -177,17 +194,25 @@ function MapaReportes() {
                   Ver detalle <Icon name="arrow-r" />
                 </Link>
               </div>
-              <div className="mapa-sheet-cols">
-                <div>
-                  <div className="lbl">Tipo</div>
-                  <div className="mapa-sheet-value">
-                    <Icon name={iconoPorId(tipos, selected.tipo)} className="mapa-sheet-type-icon" />
-                    {selected.tipo_etiqueta}
+              <div className="mapa-sheet-body">
+                {/* Solo si tiene foto: el ícono del tipo ya aparece en la columna "Tipo" */}
+                <Miniatura
+                  key={`${selected.id}-${selected.imagen_principal}`}
+                  src={selected.imagen_principal}
+                  className="thumb mapa-sheet-thumb"
+                />
+                <div className="mapa-sheet-cols">
+                  <div>
+                    <div className="lbl">Tipo</div>
+                    <div className="mapa-sheet-value">
+                      <Icon name={iconoPorId(tipos, selected.tipo)} className="mapa-sheet-type-icon" />
+                      {selected.tipo_etiqueta}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div className="lbl">Ubicación</div>
-                  <div className="mapa-sheet-value">{selected.direccion}</div>
+                  <div>
+                    <div className="lbl">Ubicación</div>
+                    <div className="mapa-sheet-value">{selected.direccion}</div>
+                  </div>
                 </div>
               </div>
             </div>
