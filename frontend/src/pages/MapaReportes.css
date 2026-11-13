@@ -185,28 +185,6 @@
   transform: translate(-50%, -50%);
 }
 
-.mapa-sort {
-  position: absolute;
-  z-index: 1;
-  top: 16px;
-  left: 16px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 12px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-float);
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
-.mapa-sort b {
-  color: var(--color-primary);
-  font-weight: 700;
-}
-
 .mapa-sheet {
   position: absolute;
   z-index: 1;
@@ -243,16 +221,25 @@
   flex: 1;
 }
 
-.mapa-sheet-share {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+/* Fila de la foto (si la hay) + columnas. La foto queda a la izquierda también en
+   celular, donde las columnas pasan a ir una debajo de otra. */
+.mapa-sheet-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 14px;
+}
+
+.mapa-sheet-thumb {
+  width: 64px;
+  height: 64px;
 }
 
 .mapa-sheet-cols {
+  flex: 1;
+  min-width: 0;
   display: flex;
   gap: 80px;
-  padding-top: 14px;
 }
 
 .mapa-sheet-cols > * {
@@ -339,15 +326,13 @@
     gap: 10px;
   }
 
+  .mapa-sheet-thumb {
+    width: 56px;
+    height: 56px;
+  }
+
   .mapa-sheet-value {
     font-size: 14px;
-  }
-}
-
-@media (max-width: 400px) {
-  /* "Ordenar por" aun no hace nada y choca con el boton de pantalla completa */
-  .mapa-sort {
-    display: none;
   }
 }
 
@@ -373,11 +358,6 @@
 
 .mapa-map--full .leaflet-right {
   right: env(safe-area-inset-right);
-}
-
-/* "Ordenar por" aún no tiene función: en pantalla completa deja el espacio a los chips */
-.mapa-map--full .mapa-sort {
-  display: none;
 }
 
 .mapa-map--full .mapa-sheet {
