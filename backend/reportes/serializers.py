@@ -33,6 +33,18 @@ def url_imagen(request, imagen_id):
     return request.build_absolute_uri(reverse('imagen', args=[imagen_id]))
 
 
+def url_imagen_principal(request, reporte):
+    """URL de la primera foto del reporte, o None si no tiene.
+
+    reporte.imagenes.all() usa el prefetch de la vista (sin el binario): no hace
+    otra consulta por reporte. Lo comparten la lista y el mapa.
+    """
+    imagenes = reporte.imagenes.all()
+    if not imagenes:
+        return None
+    return url_imagen(request, imagenes[0].id)
+
+
 class TipoIncidenteSerializer(serializers.ModelSerializer):
     class Meta:
         model = TipoIncidente
@@ -60,11 +72,7 @@ class ReporteListSerializer(serializers.ModelSerializer):
         ]
 
     def get_imagen_principal(self, obj):
-        # obj.imagenes.all() usa el prefetch de la vista (sin el binario), no hace otra consulta.
-        imagenes = obj.imagenes.all()
-        if not imagenes:
-            return None
-        return url_imagen(self.context['request'], imagenes[0].id)
+        return url_imagen_principal(self.context['request'], obj)
 
 
 class ReporteDetailSerializer(ReporteListSerializer):
@@ -141,10 +149,18 @@ class ReporteMapaSerializer(serializers.ModelSerializer):
     tipo_etiqueta = serializers.CharField(read_only=True)
     latitud = serializers.FloatField(read_only=True)             # mismo formato que lista y detalle
     longitud = serializers.FloatField(read_only=True)
+    imagen_principal = serializers.SerializerMethodField()   # miniatura de la tarjeta (o null)
 
     class Meta:
         model = Reporte
-        fields = ['id', 'latitud', 'longitud', 'tipo', 'tipo_etiqueta', 'fecha_incidente', 'titulo', 'direccion', 'zona']
+        fields = [
+            'id', 'latitud', 'longitud', 'tipo', 'tipo_etiqueta', 'fecha_incidente', 'titulo', 'direccion',
+            'zona', 'imagen_principal',
+        ]
+
+    def get_imagen_principal(self, obj):
+        # La vista del mapa hace el mismo Prefetch que la lista: sin consultas N+1.
+        return url_imagen_principal(self.context['request'], obj)
 
 
 

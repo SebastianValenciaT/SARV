@@ -121,49 +121,6 @@ class ReporteListCreateView(generics.ListCreateAPIView):
         return Response(salida.data, status=status.HTTP_201_CREATED)
 
 
-class ReporteDetailView(generics.RetrieveUpdateAPIView):
-    def get_permissions(self):
-        if self.request.method == 'GET':
-            return [AllowAny()]
-        return [IsAuthenticated()]
-
-    def get_serializer_class(self):
-        if self.request.method == 'GET':
-            return ReporteDetailSerializer
-        return ReporteUpdateSerializer
-
-    def get_queryset(self):
-        return reportes_con_detalle()
-
-    def update(self, request, *args, **kwargs):
-        parcial = kwargs.pop('partial', False)   # True con PATCH
-        with transaction.atomic():
-            # Se bloquea la fila igual que en reacciones: si el autor lo resuelve
-            # al mismo tiempo, esta petición espera y ve el estado nuevo.
-            try:
-                reporte = (
-                    Reporte.objects.select_for_update(of=('self',))
-                    .select_related('tipo')
-                    .get(pk=kwargs['pk'])
-                )
-            except Reporte.DoesNotExist:
-                raise NotFound('Este reporte no existe.')
-            if reporte.usuario_id != request.user.id:
-                return error('Solo el autor puede editar este reporte.', 'reporte_ajeno', status.HTTP_403_FORBIDDEN)
-            if not reporte.es_editable:
-                return error_solo_lectura(reporte)   # 409: resuelto o expirado (RN-14)
-
-            entrada = ReporteUpdateSerializer(
-                reporte, data=request.data, partial=parcial, context=self.get_serializer_context()
-            )
-            entrada.is_valid(raise_exception=True)
-            entrada.save()
-
-        # Misma respuesta que GET /reportes/{id}/
-        detalle = reportes_con_detalle().get(pk=reporte.pk)
-        return Response(ReporteDetailSerializer(detalle, context=self.get_serializer_context()).data)
-
-
 class MapaReportesView(generics.ListAPIView):
     """GET /api/mapa/reportes/ — pines ligeros, solo `sin_resolver` y no expirados, sin paginar."""
 
@@ -172,7 +129,12 @@ class MapaReportesView(generics.ListAPIView):
     pagination_class = None
 
     def get_queryset(self):
-        queryset = filtrar_reportes(Reporte.objects.select_related('tipo'), self.request.query_params)
+        # Prefetch con only(): de cada foto solo id y reporte_id, nunca el binario `contenido`.
+        # Así imagen_principal sale en UNA consulta extra para todos los pines (sin N+1).
+        base = Reporte.objects.select_related('tipo').prefetch_related(
+            Prefetch('imagenes', queryset=Imagen.objects.only('id', 'reporte_id'))
+        )
+        queryset = filtrar_reportes(base, self.request.query_params)
         # Después de los filtros: aunque llegue ?estado=expirado, el mapa nunca muestra expirados.
         queryset = queryset.filter(estado=Reporte.Estado.SIN_RESOLVER).no_expirados()
         return queryset.order_by('-creado_en', '-id')
