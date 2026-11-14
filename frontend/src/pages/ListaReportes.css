@@ -165,13 +165,16 @@
   font-weight: 700;
 }
 
-.lista-sort {
-  gap: 7px;
+/* "Cargar más": centrado debajo de la cuadrícula */
+.lista-mas {
+  display: flex;
+  justify-content: center;
 }
 
-.lista-sort b,
-.lista-sort .icon:last-child {
-  color: var(--color-primary);
+/* Mientras carga (aria-disabled, no disabled, para que el botón no pierda el foco) */
+.lista-mas .btn-outline[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: progress;
 }
 
 .lista-empty {
@@ -437,6 +440,10 @@
   .lista-grid {
     grid-template-columns: 1fr;
   }
+
+  .lista-mas .btn-outline {
+    width: 100%;
+  }
 }
 
 /* pantallas tactiles: 44px de alto y texto de 16px en el select */
@@ -453,6 +460,10 @@
   .lista-link-btn {
     min-height: 44px;
     padding: 0 4px;
+  }
+
+  .lista-mas .btn-outline {
+    height: 44px;
   }
 }
 

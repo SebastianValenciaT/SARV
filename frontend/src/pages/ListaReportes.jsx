@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Link } from 'react-router-dom';
 import Alert from '../components/common/Alerts';
 import EstadoBadge from '../components/common/EstadoBadge';
@@ -7,7 +7,7 @@ import MiniMap from '../components/common/MiniMap';
 import ReportesHeader from '../components/reportes/ReportesHeader';
 import { iconoPorId, iconoTipo } from '../constants/tipos';
 import { ZONAS, nombreZona } from '../constants/zonas';
-import { useReportes } from '../hooks/useReportes';
+import { useReportesPaginados } from '../hooks/useReportes';
 import { useTipos } from '../hooks/useTipos';
 import { formatCuando } from '../utils/fechas';
 import './ListaReportes.css';
@@ -46,16 +46,50 @@ function ListaReportes() {
   const [busqueda, setBusqueda] = useState('');
 
   const { data: tipos, error: errorTipos } = useTipos();
-  // Cada vez que cambian estos parametros, el hook vuelve a pedir la lista.
-  const { data, loading, error } = useReportes({
+  // Cada vez que cambian estos parametros, el hook vuelve a pedir la página 1
+  // y olvida las páginas que se habían cargado con "Cargar más".
+  const {
+    items: reportes,
+    count,
+    hayMas,
+    loading,
+    error,
+    cargandoMas,
+    errorMas,
+    cargarMas,
+  } = useReportesPaginados({
     tipo: aplicados.tipos,
     fecha: aplicados.rango,
     zona: aplicados.zona,
     q: busqueda,
   });
-
-  const reportes = data?.results ?? [];
+  const cargado = count != null; // ya llegó la página 1
   const [destacado, ...resto] = reportes;
+
+  /*
+    Foco tras "Cargar más". Mientras hay más páginas el botón sigue ahí y conserva
+    el foco. Si con la última página el botón desaparece, el foco se perdería
+    (iría al <body>): lo pasamos al enlace del primer reporte nuevo.
+    `focoPendiente` guarda la posición de ese reporte; un useRef porque no se dibuja.
+  */
+  const gridRef = useRef(null);
+  const focoPendiente = useRef(null);
+  useEffect(() => {
+    const indice = focoPendiente.current;
+    if (indice == null || cargandoMas) return; // nada pendiente, o aún cargando
+    focoPendiente.current = null;
+    // Cambió el filtro mientras tanto (página 1 cargando): no movemos nada.
+    if (loading || hayMas || reportes.length <= indice) return;
+    // La cuadrícula empieza en el reporte 2 (el 1 es el destacado): índice - 1.
+    // Sus hijos son <Link>, que son enfocables.
+    gridRef.current?.children[indice - 1]?.focus({ preventScroll: true });
+  }, [cargandoMas, hayMas, loading, reportes.length]);
+
+  const pedirMas = () => {
+    if (cargandoMas) return; // aria-disabled no bloquea el clic: lo ignoramos aquí
+    focoPendiente.current = reportes.length;
+    cargarMas();
+  };
 
   const toggleTipo = (id) => {
     setBorrador((prev) => ({
@@ -79,7 +113,7 @@ function ListaReportes() {
   return (
     <div className="lista-page">
       <ReportesHeader
-        total={data?.count}
+        total={count}
         filtrosActivos={aplicados.tipos.length + (aplicados.zona ? 1 : 0)}
         filtrosAbiertos={showFiltros}
         onToggleFiltros={() => setFiltrosElegido(!showFiltros)}
@@ -156,25 +190,21 @@ function ListaReportes() {
         {/* resultados */}
         <section className="lista-results">
           <div className="row lista-results-bar">
-            <span>
-              {data && (
+            {/* aria-live: el lector de pantalla anuncia el nuevo total al cargar más o filtrar */}
+            <span aria-live="polite">
+              {cargado && (
                 <>
-                  Mostrando <b>{reportes.length} de {data.count} reportes</b>
+                  Mostrando <b>{reportes.length} de {count} reportes</b>
                   {nombresTipos && ` · ${nombresTipos}`}
                   {busqueda && ` · "${busqueda}"`}
                 </>
               )}
             </span>
-            <span className="row lista-sort">
-              <Icon name="sort" size={15} />
-              Ordenar por <b>Más recientes</b>
-              <Icon name="down" size={14} />
-            </span>
           </div>
 
           {loading && <p className="lista-empty">Cargando reportes…</p>}
           {error && <Alert type="error" message="No se pudieron cargar los reportes. Intenta de nuevo." />}
-          {data && !destacado && <p className="lista-empty">No hay reportes con estos filtros.</p>}
+          {cargado && !destacado && <p className="lista-empty">No hay reportes con estos filtros.</p>}
 
           {/* reporte expandido */}
           {destacado && (
@@ -238,7 +268,7 @@ function ListaReportes() {
           )}
 
           {/* cuadricula */}
-          <div className="lista-grid">
+          <div className="lista-grid" ref={gridRef}>
             {resto.map((reporte) => (
               <Link
                 key={reporte.id}
@@ -269,6 +299,25 @@ function ListaReportes() {
               </Link>
             ))}
           </div>
+
+          {/* Si falla, lo ya cargado se queda y el botón sirve para reintentar */}
+          {errorMas && (
+            <Alert type="error" message="No se pudieron cargar más reportes. Intenta de nuevo." />
+          )}
+          {hayMas && (
+            <div className="lista-mas">
+              {/* aria-disabled (no disabled): un botón disabled pierde el foco en
+                  algunos navegadores; el clic se ignora en pedirMas y en el hook. */}
+              <button
+                type="button"
+                className="btn-outline"
+                aria-disabled={cargandoMas}
+                onClick={pedirMas}
+              >
+                {cargandoMas ? 'Cargando…' : 'Cargar más'}
+              </button>
+            </div>
+          )}
         </section>
       </div>
     </div>
